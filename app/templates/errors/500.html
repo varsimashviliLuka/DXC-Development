@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block title %}Server Error{% endblock %}
+
+{% block content %}
+<section class="panel panel-narrow">
+  <h1>500 — Something went wrong</h1>
+  <p><a href="{{ url_for('main.index') }}">Go home</a></p>
+</section>
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% from "macros/pagination.html" import render_pagination %}
+{% from "macros/ui.html" import page_header, search_bar, badge, money %}
+
+{% block title %}Users — Admin{% endblock %}
+
+{% block content %}
+{{ page_header("Users", "Register residents and manage accounts.") }}
+
+<section class="panel">
+  <h2>Register new user</h2>
+  <form method="post" class="form form-grid">
+    <div class="form-group">
+      <label for="phone_number">Phone</label>
+      <input type="text" id="phone_number" name="phone_number" required
+             placeholder="+995592159199"
+             value="{{ form.get('phone_number', '') }}">
+    </div>
+    <div class="form-group">
+      <label for="id_number">ID number</label>
+      <input type="text" id="id_number" name="id_number" required
+             value="{{ form.get('id_number', '') }}">
+    </div>
+    <div class="form-group">
+      <label for="email">Email (optional)</label>
+      <input type="email" id="email" name="email" value="{{ form.get('email', '') }}">
+    </div>
+    <div class="form-group">
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" required>
+    </div>
+    <div class="form-group">
+      <label for="first_name">First name</label>
+      <input type="text" id="first_name" name="first_name" value="{{ form.get('first_name', '') }}">
+    </div>
+    <div class="form-group">
+      <label for="last_name">Last name</label>
+      <input type="text" id="last_name" name="last_name" value="{{ form.get('last_name', '') }}">
+    </div>
+    <div class="form-group">
+      <label for="status">Status</label>
+      <select id="status" name="status">
+        {% for s in statuses %}
+        <option value="{{ s.value }}">{{ s.value }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Create user</button>
+    </div>
+  </form>
+</section>
+
+<section class="panel">
+  <div class="panel-header">
+    <h2>All users</h2>
+    {{ search_bar(url_for('admin.users'), "Search phone, ID, name, email...", search_q) }}
+  </div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Phone</th>
+          <th>ID number</th>
+          <th>Name</th>
+          <th>Balance</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in users %}
+        <tr>
+          <td>{{ user.phone_number }}</td>
+          <td>{{ user.id_number }}</td>
+          <td>{{ user.first_name or '' }} {{ user.last_name or '' }}</td>
+          <td>{{ money(user.balance, 'text-success' if user.balance >= 0 else 'text-danger') }}</td>
+          <td>{{ badge(user.status) }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="muted">No users found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {{ render_pagination(pagination, 'admin.users', search_q) }}
+</section>
+{% endblock %}

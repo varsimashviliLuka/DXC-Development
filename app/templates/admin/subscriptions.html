@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% from "macros/pagination.html" import render_pagination %}
+{% from "macros/ui.html" import page_header, search_bar, combobox, badge, money %}
+
+{% block title %}Subscriptions — Admin{% endblock %}
+
+{% block content %}
+{{ page_header("Subscriptions", "Door-level billing subscriptions for residents.") }}
+
+<section class="panel">
+  <h2>Create subscription</h2>
+  <form method="post" class="form form-grid">
+    {{ combobox(
+      "user_id",
+      "Resident",
+      url_for("admin_api.search_users"),
+      "Search by phone, ID, or name...",
+      required=true,
+      value=form.get('user_id', '')
+    ) }}
+    {{ combobox(
+      "building_id",
+      "Building",
+      url_for("admin_api.search_buildings"),
+      "Search building number or name...",
+      required=true,
+      value=form.get('building_id', '')
+    ) }}
+    <div class="form-group">
+      <label for="door_number">Door number</label>
+      <input type="text" id="door_number" name="door_number" required
+             value="{{ form.get('door_number', '') }}">
+    </div>
+    <div class="form-group">
+      <label for="monthly_fee">Monthly fee (₾)</label>
+      <input type="number" step="0.01" min="0" id="monthly_fee" name="monthly_fee" required
+             value="{{ form.get('monthly_fee', '') }}">
+    </div>
+    <div class="form-group">
+      <label for="next_payment_due">Next payment due</label>
+      <input type="date" id="next_payment_due" name="next_payment_due"
+             value="{{ form.get('next_payment_due', '') }}">
+    </div>
+    <div class="form-group">
+      <label for="status">Status</label>
+      <select id="status" name="status">
+        {% for s in statuses %}
+        <option value="{{ s.value }}">{{ s.value }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Create subscription</button>
+    </div>
+  </form>
+</section>
+
+<section class="panel">
+  <div class="panel-header">
+    <h2>All subscriptions</h2>
+    {{ search_bar(url_for('admin.subscriptions'), "Search user, building, door...", search_q) }}
+  </div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Building</th>
+          <th>Door</th>
+          <th>Fee</th>
+          <th>Status</th>
+          <th>Next due</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sub in subscriptions %}
+        <tr>
+          <td>{{ sub.user.phone_number if sub.user else sub.user_id }}</td>
+          <td>{{ sub.building.building_number if sub.building else sub.building_id }}</td>
+          <td>{{ sub.door_number }}</td>
+          <td>{{ money(sub.monthly_fee) }}</td>
+          <td>{{ badge(sub.status) }}</td>
+          <td>{{ sub.next_payment_due or '—' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="muted">No subscriptions found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {{ render_pagination(pagination, 'admin.subscriptions', search_q) }}
+</section>
+{% endblock %}

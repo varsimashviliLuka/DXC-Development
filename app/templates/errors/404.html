@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block title %}Not Found{% endblock %}
+
+{% block content %}
+<section class="panel panel-narrow">
+  <h1>404 — Page not found</h1>
+  <p><a href="{{ url_for('main.index') }}">Go home</a></p>
+</section>
+{% endblock %}

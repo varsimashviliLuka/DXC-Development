@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% from "macros/pagination.html" import render_pagination %}
+{% from "macros/ui.html" import page_header, search_bar, combobox, badge %}
+
+{% block title %}Chips — Admin{% endblock %}
+
+{% block content %}
+{{ page_header("Chips", "Assign and manage physical access chips.") }}
+
+<section class="panel">
+  <h2>Assign new chip</h2>
+  <form method="post" class="form form-grid">
+    <input type="hidden" name="action" value="create">
+    {{ combobox(
+      "user_id",
+      "Resident",
+      url_for("admin_api.search_users"),
+      "Search by phone, ID, or name...",
+      required=true
+    ) }}
+    <div class="form-group">
+      <label for="chip_number">Chip number</label>
+      <input type="text" id="chip_number" name="chip_number" required placeholder="CHIP-001">
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Assign chip</button>
+    </div>
+  </form>
+</section>
+
+<section class="panel">
+  <div class="panel-header">
+    <h2>All chips</h2>
+    {{ search_bar(url_for('admin.chips'), "Search chip, phone, ID...", search_q) }}
+  </div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Chip</th>
+          <th>User</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for chip in chips %}
+        <tr>
+          <td><strong>{{ chip.chip_number }}</strong></td>
+          <td>{{ chip.user.phone_number if chip.user else chip.user_id }}</td>
+          <td>{{ badge(chip.status) }}</td>
+          <td>
+            {% if chip.status.value == 'active' %}
+            <form method="post" action="{{ url_for('admin.deactivate_chip', chip_id=chip.id) }}" class="inline-form">
+              <button type="submit" class="btn btn-danger btn-sm">Deactivate</button>
+            </form>
+            {% else %}
+            <form method="post" action="{{ url_for('admin.activate_chip', chip_id=chip.id) }}" class="inline-form">
+              <button type="submit" class="btn btn-primary btn-sm">Activate</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="muted">No chips found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {{ render_pagination(pagination, 'admin.chips', search_q) }}
+</section>
+{% endblock %}

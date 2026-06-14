@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% from "macros/ui.html" import page_header, money, badge %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+{{ page_header("My dashboard", "Account balance, subscriptions, and recent activity.") }}
+
+<section class="stats-grid">
+  <div class="stat-card">
+    <span class="stat-label">Balance</span>
+    <span class="stat-value">{{ money(summary.summary.account_balance, 'text-success' if summary.summary.account_balance >= 0 else 'text-danger') }}</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-label">Monthly fees</span>
+    <span class="stat-value">{{ money(summary.summary.total_monthly_fee) }}</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-label">Subscriptions</span>
+    <span class="stat-value">{{ summary.summary.subscription_count }}</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-label">Active chips</span>
+    <span class="stat-value">{{ summary.summary.active_chips }}</span>
+  </div>
+  <div class="stat-card {% if summary.summary.overdue_subscriptions > 0 %}stat-card-warning{% endif %}">
+    <span class="stat-label">Overdue</span>
+    <span class="stat-value">{{ summary.summary.overdue_subscriptions }}</span>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Profile</h2>
+  <dl class="detail-list">
+    <dt>Phone</dt><dd>{{ summary.user.phone_number }}</dd>
+    <dt>ID number</dt><dd>{{ summary.user.id_number }}</dd>
+    <dt>Email</dt><dd>{{ summary.user.email or '—' }}</dd>
+    <dt>Status</dt><dd>{{ badge(summary.user.status) }}</dd>
+  </dl>
+</section>
+
+<section class="panel">
+  <div class="panel-header">
+    <h2>Recent transactions</h2>
+    <a href="{{ url_for('user.transactions') }}" class="btn btn-ghost btn-sm">View all</a>
+  </div>
+  {% if summary.recent_transactions %}
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Type</th>
+          <th>Amount</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for txn in summary.recent_transactions %}
+        <tr>
+          <td>{{ txn.created_at[:10] if txn.created_at else '—' }}</td>
+          <td>{{ badge(txn.transaction_type) }}</td>
+          <td>{{ money(txn.amount, 'text-success' if txn.amount >= 0 else 'text-danger') }}</td>
+          <td>{{ txn.description or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="muted">No transactions yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

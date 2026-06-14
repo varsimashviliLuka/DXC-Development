@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% from "macros/ui.html" import page_header %}
+
+{% block title %}Import Payments — Admin{% endblock %}
+
+{% block content %}
+{{ page_header("Import bank payments", "Upload a CSV export from TBC, BoG, or compatible Georgian bank format.") }}
+
+<section class="panel">
+  <p>Only <strong>Income</strong> rows with a positive amount are credited to user balances.</p>
+
+  <form method="post" enctype="multipart/form-data" class="form">
+    <div class="form-group">
+      <label for="file">Bank CSV file</label>
+      <input type="file" id="file" name="file" accept=".csv" required class="file-input">
+    </div>
+    <button type="submit" class="btn btn-primary">Upload and import</button>
+  </form>
+</section>
+
+<section class="panel">
+  <h2>Customer payment reference guide</h2>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr><th>Scenario</th><th>What customer puts in description</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Paying own fee</td>
+          <td>Nothing extra (matched via Partner's Tax Code)</td>
+        </tr>
+        <tr>
+          <td>Paying for another person</td>
+          <td><code>UID:01010017857</code> (beneficiary personal number)</td>
+        </tr>
+        <tr>
+          <td>Paying for another by phone</td>
+          <td><code>UID:+995592159199</code></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{% if result %}
+<section class="panel">
+  <h2>Import result</h2>
+  <div class="stats-grid stats-grid-inline">
+    <div class="stat-card stat-card-success">
+      <span class="stat-label">Matched</span>
+      <span class="stat-value">{{ result.matched }}</span>
+    </div>
+    <div class="stat-card {% if result.unmatched > 0 %}stat-card-warning{% endif %}">
+      <span class="stat-label">Unmatched</span>
+      <span class="stat-value">{{ result.unmatched }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Skipped</span>
+      <span class="stat-value">{{ result.skipped }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Duplicates</span>
+      <span class="stat-value">{{ result.duplicates }}</span>
+    </div>
+  </div>
+  {% if result.unmatched > 0 %}
+  <p><a href="{{ url_for('admin.unmatched_payments') }}" class="btn btn-secondary btn-sm">Review unmatched payments</a></p>
+  {% endif %}
+  {% if result.errors %}
+  <h3>Errors</h3>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Row</th><th>Error</th></tr></thead>
+      <tbody>
+        {% for err in result.errors %}
+        <tr><td>{{ err.row }}</td><td>{{ err.error }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% from "macros/ui.html" import page_header, badge, money %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+{{ page_header("Dashboard", "Overview of users, payments, and recent activity.") }}
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <span class="stat-label">Users</span>
+    <span class="stat-value">{{ users_count }}</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-label">Buildings</span>
+    <span class="stat-value">{{ buildings_count }}</span>
+  </div>
+  <div class="stat-card {% if unmatched_count > 0 %}stat-card-warning{% endif %}">
+    <span class="stat-label">Unmatched payments</span>
+    <span class="stat-value">{{ unmatched_count }}</span>
+  </div>
+</div>
+
+{% if unmatched_count > 0 %}
+<section class="panel panel-warning">
+  <div class="panel-header">
+    <h2>Unmatched bank payments</h2>
+    <a href="{{ url_for('admin.unmatched_payments') }}" class="btn btn-secondary btn-sm">Review all</a>
+  </div>
+  <p class="muted">These incoming payments could not be linked to a registered user.</p>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Amount</th>
+          <th>Payer</th>
+          <th>Tax code</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in unmatched_payments %}
+        <tr>
+          <td>{{ p.transaction_date or '—' }}</td>
+          <td>{{ money(p.amount) }}</td>
+          <td>
+            {% if p.partner_first_name or p.partner_last_name %}
+              {{ p.partner_first_name or '' }} {{ p.partner_last_name or '' }}
+            {% else %}
+              {{ p.partner_name or '—' }}
+            {% endif %}
+          </td>
+          <td>{{ p.partner_tax_code or '—' }}</td>
+          <td>{{ p.description or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
+<section class="panel">
+  <h2>Payment instructions for customers</h2>
+  <div class="info-box">
+    <p><strong>Paying for yourself:</strong> no extra text needed — the bank sends your personal number as <em>Partner's Tax Code</em> and we match it automatically.</p>
+    <p><strong>Paying for someone else:</strong> add this to the payment description or additional description field:</p>
+    <pre class="code-block">UID:01010017857</pre>
+    <p class="muted">Use the beneficiary's personal number (ID) or phone: <code>UID:+995592159199</code></p>
+    <p class="muted">The <code>UID:</code> token always takes priority over the payer's tax code.</p>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panel-header">
+    <h2>Recent subscriptions</h2>
+    <a href="{{ url_for('admin.subscriptions') }}" class="btn btn-ghost btn-sm">View all</a>
+  </div>
+  {% if recent_subscriptions %}
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Door</th>
+          <th>Fee</th>
+          <th>Status</th>
+          <th>Next due</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sub in recent_subscriptions %}
+        <tr>
+          <td>{{ sub.user.phone_number if sub.user else sub.user_id }}</td>
+          <td>{{ sub.door_number }}</td>
+          <td>{{ money(sub.monthly_fee) }}</td>
+          <td>{{ badge(sub.status) }}</td>
+          <td>{{ sub.next_payment_due or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="muted">No subscriptions yet.</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <div class="panel-header">
+    <h2>Recent chips</h2>
+    <a href="{{ url_for('admin.chips') }}" class="btn btn-ghost btn-sm">View all</a>
+  </div>
+  {% if recent_chips %}
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Chip</th>
+          <th>User</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for chip in recent_chips %}
+        <tr>
+          <td><strong>{{ chip.chip_number }}</strong></td>
+          <td>{{ chip.user.phone_number if chip.user else chip.user_id }}</td>
+          <td>{{ badge(chip.status) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="muted">No chips yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

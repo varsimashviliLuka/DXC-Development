@@ -1,0 +1,44 @@
+{% macro page_header(title, subtitle=None) %}
+<header class="page-header">
+  <div>
+    <h1>{{ title }}</h1>
+    {% if subtitle %}<p class="page-subtitle">{{ subtitle }}</p>{% endif %}
+  </div>
+</header>
+{% endmacro %}
+
+{% macro search_bar(action, placeholder="Search...", value="") %}
+<form class="search-bar" method="get" action="{{ action }}">
+  <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+  <input type="search" name="q" value="{{ value }}" placeholder="{{ placeholder }}" class="search-input">
+  {% if value %}
+  <a href="{{ action }}" class="btn btn-ghost btn-sm">Clear</a>
+  {% endif %}
+</form>
+{% endmacro %}
+
+{% macro combobox(name, label, source, placeholder="Type to search...", required=false, value="", label_text="") %}
+<div class="combobox{% if required %} combobox-required{% endif %}"
+     data-combobox
+     data-source="{{ source }}"
+     data-name="{{ name }}"
+     data-initial-value="{{ value }}"
+     data-initial-label="{{ label_text }}">
+  <label class="form-label">{{ label }}</label>
+  <div class="combobox-control">
+    <input type="text" class="combobox-input" placeholder="{{ placeholder }}" autocomplete="off" spellcheck="false">
+    <input type="hidden" name="{{ name }}" value="{{ value }}" {% if required %}required{% endif %}>
+    <button type="button" class="combobox-clear" aria-label="Clear selection" hidden>&times;</button>
+    <ul class="combobox-dropdown" role="listbox" hidden></ul>
+  </div>
+</div>
+{% endmacro %}
+
+{% macro badge(status) %}
+{% set s = status.value if status.value is defined else status %}
+<span class="badge badge-{{ s }}">{{ s }}</span>
+{% endmacro %}
+
+{% macro money(amount, class='') %}
+<span class="money {{ class }}">{{ '%.2f'|format(amount|float) }} ₾</span>
+{% endmacro %}

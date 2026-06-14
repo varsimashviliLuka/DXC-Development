@@ -1,0 +1,35 @@
+<aside class="sidebar">
+  <a href="{{ url_for('main.index') }}" class="sidebar-brand">
+    <span>EC</span>
+    Elevator Chip
+  </a>
+
+  {% if current_user.is_admin() %}
+  <div class="sidebar-section">Admin</div>
+  <nav class="sidebar-nav">
+    <a href="{{ url_for('admin.dashboard') }}" class="sidebar-link{% if request.endpoint == 'admin.dashboard' %} active{% endif %}">Dashboard</a>
+    <a href="{{ url_for('admin.users') }}" class="sidebar-link{% if request.endpoint == 'admin.users' %} active{% endif %}">Users</a>
+    <a href="{{ url_for('admin.buildings') }}" class="sidebar-link{% if request.endpoint == 'admin.buildings' %} active{% endif %}">Buildings</a>
+    <a href="{{ url_for('admin.subscriptions') }}" class="sidebar-link{% if request.endpoint == 'admin.subscriptions' %} active{% endif %}">Subscriptions</a>
+    <a href="{{ url_for('admin.chips') }}" class="sidebar-link{% if request.endpoint == 'admin.chips' %} active{% endif %}">Chips</a>
+    <a href="{{ url_for('admin.import_payments') }}" class="sidebar-link{% if request.endpoint == 'admin.import_payments' %} active{% endif %}">Import payments</a>
+    <a href="{{ url_for('admin.unmatched_payments') }}" class="sidebar-link{% if request.endpoint == 'admin.unmatched_payments' %} active{% endif %}">Unmatched</a>
+  </nav>
+  {% else %}
+  <div class="sidebar-section">My account</div>
+  <nav class="sidebar-nav">
+    <a href="{{ url_for('user.dashboard') }}" class="sidebar-link{% if request.endpoint == 'user.dashboard' %} active{% endif %}">Dashboard</a>
+    <a href="{{ url_for('user.subscriptions') }}" class="sidebar-link{% if request.endpoint == 'user.subscriptions' %} active{% endif %}">Subscriptions</a>
+    <a href="{{ url_for('user.chips') }}" class="sidebar-link{% if request.endpoint == 'user.chips' %} active{% endif %}">Chips</a>
+    <a href="{{ url_for('user.transactions') }}" class="sidebar-link{% if request.endpoint == 'user.transactions' %} active{% endif %}">Transactions</a>
+    <a href="{{ url_for('user.profile') }}" class="sidebar-link{% if request.endpoint in ['user.profile', 'user.password'] %} active{% endif %}">Profile</a>
+  </nav>
+  {% endif %}
+
+  <div class="sidebar-footer">
+    <div class="sidebar-user">{{ current_user.phone_number }}</div>
+    <form action="{{ url_for('auth.logout') }}" method="post">
+      <button type="submit" class="btn btn-ghost btn-sm btn-block">Sign out</button>
+    </form>
+  </div>
+</aside>

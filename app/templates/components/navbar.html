@@ -1,0 +1,29 @@
+<header class="navbar">
+  <div class="navbar-brand">
+    <a href="{{ url_for('main.index') }}">Elevator Chip</a>
+  </div>
+  <nav class="navbar-links">
+    {% if current_user %}
+      {% if current_user.is_admin() %}
+        <a href="{{ url_for('admin.dashboard') }}">Admin</a>
+        <a href="{{ url_for('admin.users') }}">Users</a>
+        <a href="{{ url_for('admin.buildings') }}">Buildings</a>
+        <a href="{{ url_for('admin.subscriptions') }}">Subscriptions</a>
+        <a href="{{ url_for('admin.chips') }}">Chips</a>
+        <a href="{{ url_for('admin.import_payments') }}">Import Payments</a>
+        <a href="{{ url_for('admin.unmatched_payments') }}">Unmatched</a>
+      {% else %}
+        <a href="{{ url_for('user.dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('user.subscriptions') }}">Subscriptions</a>
+        <a href="{{ url_for('user.chips') }}">Chips</a>
+        <a href="{{ url_for('user.transactions') }}">Transactions</a>
+        <a href="{{ url_for('user.profile') }}">Profile</a>
+      {% endif %}
+      <form action="{{ url_for('auth.logout') }}" method="post" class="inline-form">
+        <button type="submit">Logout ({{ current_user.phone_number }})</button>
+      </form>
+    {% else %}
+      <a href="{{ url_for('auth.login') }}">Login</a>
+    {% endif %}
+  </nav>
+</header>

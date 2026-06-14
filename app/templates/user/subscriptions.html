@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% from "macros/ui.html" import page_header, money, badge %}
+
+{% block title %}My Subscriptions{% endblock %}
+
+{% block content %}
+{{ page_header("My subscriptions", "Door-level billing for your buildings.") }}
+
+<section class="panel">
+  {% if subscriptions %}
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Building</th>
+          <th>Door</th>
+          <th>Monthly fee</th>
+          <th>Status</th>
+          <th>Next payment due</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sub in subscriptions %}
+        <tr>
+          <td>{{ sub.building.name if sub.building else sub.building_id }}</td>
+          <td>{{ sub.door_number }}</td>
+          <td>{{ money(sub.monthly_fee) }}</td>
+          <td>{{ badge(sub.status) }}</td>
+          <td>{{ sub.next_payment_due or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="muted">You have no subscriptions.</p>
+  {% endif %}
+</section>
+{% endblock %}

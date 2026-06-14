@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% from "macros/ui.html" import page_header, money, badge %}
+
+{% block title %}Profile{% endblock %}
+
+{% block content %}
+{{ page_header("Profile", "Your account details.") }}
+
+<section class="panel">
+  <dl class="detail-list">
+    <dt>Phone</dt><dd>{{ user.phone_number }}</dd>
+    <dt>ID number</dt><dd>{{ user.id_number }}</dd>
+    <dt>Email</dt><dd>{{ user.email or '—' }}</dd>
+    <dt>Name</dt><dd>{{ user.first_name or '' }} {{ user.last_name or '' }}</dd>
+    <dt>Balance</dt><dd>{{ money(user.balance, 'text-success' if user.balance >= 0 else 'text-danger') }}</dd>
+    <dt>Status</dt><dd>{{ badge(user.status) }}</dd>
+  </dl>
+  <div class="form-actions">
+    <a href="{{ url_for('user.password') }}" class="btn btn-secondary">Change password</a>
+  </div>
+</section>
+{% endblock %}

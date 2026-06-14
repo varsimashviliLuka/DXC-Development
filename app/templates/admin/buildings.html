@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% from "macros/pagination.html" import render_pagination %}
+{% from "macros/ui.html" import page_header, search_bar %}
+
+{% block title %}Buildings — Admin{% endblock %}
+
+{% block content %}
+{{ page_header("Buildings", "Manage building registry for subscriptions.") }}
+
+<section class="panel">
+  <h2>Create building</h2>
+  <form method="post" class="form form-grid">
+    <div class="form-group">
+      <label for="building_number">Building number</label>
+      <input type="text" id="building_number" name="building_number" required
+             value="{{ form.get('building_number', '') }}">
+    </div>
+    <div class="form-group">
+      <label for="name">Name</label>
+      <input type="text" id="name" name="name" required value="{{ form.get('name', '') }}">
+    </div>
+    <div class="form-group form-group-full">
+      <label for="address">Address</label>
+      <input type="text" id="address" name="address" value="{{ form.get('address', '') }}">
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Create building</button>
+    </div>
+  </form>
+</section>
+
+<section class="panel">
+  <div class="panel-header">
+    <h2>All buildings</h2>
+    {{ search_bar(url_for('admin.buildings'), "Search number, name, address...", search_q) }}
+  </div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Number</th>
+          <th>Name</th>
+          <th>Address</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for building in buildings %}
+        <tr>
+          <td><strong>{{ building.building_number }}</strong></td>
+          <td>{{ building.name }}</td>
+          <td>{{ building.address or '—' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="3" class="muted">No buildings found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {{ render_pagination(pagination, 'admin.buildings', search_q) }}
+</section>
+{% endblock %}

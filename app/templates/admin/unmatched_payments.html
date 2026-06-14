@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% from "macros/ui.html" import page_header, combobox, money, badge %}
+
+{% block title %}Unmatched Payments — Admin{% endblock %}
+
+{% block content %}
+{{ page_header("Unmatched payments", "Review incoming bank transfers that could not be matched automatically.") }}
+
+{% if records %}
+  {% for record in records %}
+  <section class="panel">
+    <div class="panel-header">
+      <div>
+        <h2>{{ money(record.amount) }}</h2>
+        <p class="muted">{{ record.transaction_date or 'No date' }} · {{ record.bank_transaction_id }}</p>
+      </div>
+      {{ badge('unmatched') }}
+    </div>
+
+    <dl class="detail-list">
+      <dt>Payer</dt>
+      <dd>
+        {% if record.partner_first_name or record.partner_last_name %}
+          {{ record.partner_first_name or '' }} {{ record.partner_last_name or '' }}
+        {% else %}
+          {{ record.partner_name or '—' }}
+        {% endif %}
+      </dd>
+      <dt>Tax code</dt><dd>{{ record.partner_tax_code or '—' }}</dd>
+      <dt>Description</dt><dd>{{ record.description or '—' }}</dd>
+      <dt>Additional</dt><dd>{{ record.additional_description or record.additional_information or '—' }}</dd>
+    </dl>
+
+    <div class="action-row">
+      <form method="post" action="{{ url_for('admin.assign_unmatched_payment', import_id=record.id) }}" class="form form-grid">
+        {{ combobox(
+          "user_id",
+          "Assign to existing user",
+          url_for("admin_api.search_users"),
+          "Search resident...",
+          required=true
+        ) }}
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Assign payment</button>
+        </div>
+      </form>
+    </div>
+
+    <details class="create-user-details">
+      <summary>Create new user from this payment</summary>
+      <form method="post" action="{{ url_for('admin.create_user_from_payment', import_id=record.id) }}" class="form form-grid">
+        <p class="muted form-group-full">
+          ID number from bank: <strong>{{ record.partner_tax_code }}</strong>
+          {% if record.partner_first_name %} · Name: {{ record.partner_first_name }} {{ record.partner_last_name or '' }}{% endif %}
+        </p>
+        <div class="form-group">
+          <label>Phone number</label>
+          <input type="text" name="phone_number" required placeholder="+995592159199">
+        </div>
+        <div class="form-group">
+          <label>Email (optional)</label>
+          <input type="email" name="email">
+        </div>
+        <div class="form-group">
+          <label>Initial password</label>
+          <input type="password" name="password" required minlength="8">
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-secondary">Create user &amp; credit</button>
+        </div>
+      </form>
+    </details>
+  </section>
+  {% endfor %}
+{% else %}
+<section class="panel">
+  <p class="muted">No unmatched payments. All imports are reconciled.</p>
+</section>
+{% endif %}
+{% endblock %}
