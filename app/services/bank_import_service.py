@@ -45,6 +45,8 @@ BANK_CSV_COLUMNS = {
 
 
 class BankImportService:
+  _SPLIT_QUANT = Decimal("0.01")
+
   @staticmethod
   def import_bank_csv(file_stream) -> dict:
     content = file_stream.read()
@@ -162,6 +164,30 @@ class BankImportService:
       db.session.commit()
       return "skipped"
 
+    users, multi_method, multi_hint = PaymentMatcher.resolve_beneficiaries(
+      description=description,
+      additional_information=additional_info,
+      additional_description=additional_desc,
+      partner_tax_code=partner_tax,
+      partner_name=partner_name,
+    )
+    if users:
+      bank_import = BankImportService._create_bank_import(
+        record=record,
+        batch_id=batch_id,
+        bank_txn_id=bank_txn_id,
+        amount=amount,
+        match_status=ImportMatchStatus.MATCHED,
+        match_method=multi_method,
+        match_hint=multi_hint,
+        user_id=users[0].id,
+      )
+      db.session.add(bank_import)
+      db.session.flush()
+      BankImportService._credit_users_split(bank_import, users)
+      db.session.commit()
+      return "matched"
+
     user, method, hint = PaymentMatcher.resolve_beneficiary(
       description=description,
       additional_information=additional_info,
@@ -267,6 +293,44 @@ class BankImportService:
     )
     db.session.add(txn)
     return txn
+
+  @staticmethod
+  def _split_amount(total: Decimal, parts: int) -> list[Decimal]:
+    if parts <= 0:
+      return []
+    base = (total / parts).quantize(BankImportService._SPLIT_QUANT)
+    splits = [base for _ in range(parts)]
+    current_sum = sum(splits, Decimal("0.00"))
+    remainder = total - current_sum
+    # Keep exact accounting by applying rounding remainder to the first recipient.
+    splits[0] += remainder
+    return splits
+
+  @staticmethod
+  def _credit_users_split(bank_import: BankImport, users: list[User]) -> None:
+    if not users:
+      return
+
+    if len(users) == 1:
+      BankImportService._credit_user(bank_import, users[0])
+      return
+
+    amounts = BankImportService._split_amount(bank_import.amount, len(users))
+    for idx, (user, amount) in enumerate(zip(users, amounts), start=1):
+      user.balance += amount
+      txn = Transaction(
+        user_id=user.id,
+        amount=amount,
+        transaction_type=TransactionType.PAYMENT,
+        status=TransactionStatus.COMPLETED,
+        description=(
+          f"{(bank_import.description or 'Bank payment')[:450]} "
+          f"(split {idx}/{len(users)})"
+        )[:500],
+        reference=f"BANK-{bank_import.bank_transaction_id}-SPLIT-{idx}",
+        bank_import_id=bank_import.id if idx == 1 else None,
+      )
+      db.session.add(txn)
 
   @staticmethod
   def list_unmatched(limit: int = 20):

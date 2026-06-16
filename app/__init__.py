@@ -98,6 +98,10 @@ def create_app(config_name=None):
     from app import models  # noqa: F401
 
     db.create_all()
+    from app.utils.schema import ensure_admin_comment_columns, ensure_building_number_non_unique
+
+    ensure_admin_comment_columns()
+    ensure_building_number_non_unique()
     AuthService.ensure_admin_user(app.config)
     logger.info("Database initialized")
 

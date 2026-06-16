@@ -42,6 +42,7 @@ class User(TimestampMixin, db.Model):
   balance = db.Column(db.Numeric(12, 2), nullable=False, default=0)
   first_name = db.Column(db.String(100))
   last_name = db.Column(db.String(100))
+  admin_comment = db.Column(db.Text, nullable=True)
 
   subscriptions = db.relationship(
     "Subscription",
@@ -65,8 +66,8 @@ class User(TimestampMixin, db.Model):
   def is_admin(self):
     return self.role == UserRole.ADMIN
 
-  def to_dict(self, include_sensitive=False):
-    return {
+  def to_dict(self, include_sensitive=False, include_admin=False):
+    data = {
       "id": self.id,
       "phone_number": self.phone_number,
       "id_number": self.id_number,
@@ -79,15 +80,19 @@ class User(TimestampMixin, db.Model):
       "created_at": self.created_at.isoformat() if self.created_at else None,
       "updated_at": self.updated_at.isoformat() if self.updated_at else None,
     }
+    if include_admin:
+      data["admin_comment"] = self.admin_comment
+    return data
 
 
 class Building(TimestampMixin, db.Model):
   __tablename__ = "buildings"
 
   id = db.Column(db.Integer, primary_key=True)
-  building_number = db.Column(db.String(50), unique=True, nullable=False, index=True)
+  building_number = db.Column(db.String(50), nullable=False, index=True)
   name = db.Column(db.String(200), nullable=False)
   address = db.Column(db.String(500))
+  admin_comment = db.Column(db.Text, nullable=True)
 
   subscriptions = db.relationship(
     "Subscription",
@@ -95,8 +100,8 @@ class Building(TimestampMixin, db.Model):
     lazy="dynamic",
   )
 
-  def to_dict(self):
-    return {
+  def to_dict(self, include_admin=False):
+    data = {
       "id": self.id,
       "building_number": self.building_number,
       "name": self.name,
@@ -104,6 +109,9 @@ class Building(TimestampMixin, db.Model):
       "created_at": self.created_at.isoformat() if self.created_at else None,
       "updated_at": self.updated_at.isoformat() if self.updated_at else None,
     }
+    if include_admin:
+      data["admin_comment"] = self.admin_comment
+    return data
 
 
 class Subscription(TimestampMixin, db.Model):
@@ -134,6 +142,7 @@ class Subscription(TimestampMixin, db.Model):
     default=SubscriptionStatus.ACTIVE,
   )
   next_payment_due = db.Column(db.Date, nullable=True)
+  admin_comment = db.Column(db.Text, nullable=True)
 
   user = db.relationship("User", back_populates="subscriptions")
   building = db.relationship("Building", back_populates="subscriptions")
@@ -143,12 +152,25 @@ class Subscription(TimestampMixin, db.Model):
     lazy="dynamic",
   )
 
-  def to_dict(self, include_building=False, include_user=False):
+  @property
+  def payment_reference(self) -> str | None:
+    if not self.building:
+      return None
+    from app.utils.payment_matching import build_payment_reference
+
+    return build_payment_reference(
+      self.building_id,
+      self.building.building_number,
+      self.door_number,
+    )
+
+  def to_dict(self, include_building=False, include_user=False, include_admin=False):
     data = {
       "id": self.id,
       "user_id": self.user_id,
       "building_id": self.building_id,
       "door_number": self.door_number,
+      "payment_reference": self.payment_reference,
       "monthly_fee": float(self.monthly_fee),
       "status": self.status.value,
       "next_payment_due": (
@@ -157,10 +179,12 @@ class Subscription(TimestampMixin, db.Model):
       "created_at": self.created_at.isoformat() if self.created_at else None,
       "updated_at": self.updated_at.isoformat() if self.updated_at else None,
     }
+    if include_admin:
+      data["admin_comment"] = self.admin_comment
     if include_building and self.building:
-      data["building"] = self.building.to_dict()
+      data["building"] = self.building.to_dict(include_admin=include_admin)
     if include_user and self.user:
-      data["user"] = self.user.to_dict()
+      data["user"] = self.user.to_dict(include_admin=include_admin)
     return data
 
 

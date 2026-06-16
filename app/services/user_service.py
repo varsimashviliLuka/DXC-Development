@@ -56,16 +56,36 @@ class UserService:
     user_id: int,
     *,
     actor: User,
+    phone_number: str | None = None,
+    id_number: str | None = None,
     status: UserStatus | None = None,
     first_name: str | None = None,
     last_name: str | None = None,
     email: str | None = None,
     balance: Decimal | None = None,
     password: str | None = None,
+    admin_comment: str | None = None,
+    admin_comment_set: bool = False,
   ) -> User:
     user = UserService.get_by_id(user_id)
     if user.is_admin() and not actor.is_admin():
       raise ForbiddenError("Cannot modify admin account")
+
+    if phone_number is not None:
+      phone = normalize_phone(phone_number)
+      existing = User.query.filter(
+        User.phone_number == phone, User.id != user.id
+      ).first()
+      if existing:
+        raise ConflictError("Phone number already registered")
+      user.phone_number = phone
+
+    if id_number is not None:
+      id_num = validate_id_number(id_number)
+      existing = User.query.filter(User.id_number == id_num, User.id != user.id).first()
+      if existing:
+        raise ConflictError("ID number already registered")
+      user.id_number = id_num
 
     if status is not None:
       user.status = status
@@ -84,10 +104,38 @@ class UserService:
       user.balance = balance
     if password is not None:
       user.password_hash = hash_password(validate_password(password))
+    if admin_comment_set:
+      user.admin_comment = (admin_comment or "").strip() or None
 
     db.session.commit()
     logger.info("Updated user_id=%s by actor_id=%s", user.id, actor.id)
     return user
+
+  @staticmethod
+  def delete(user_id: int, *, actor: User) -> None:
+    from app.enums import UserRole
+    from app.models import BankImport, Subscription, Transaction
+
+    user = UserService.get_by_id(user_id)
+    if user.role == UserRole.ADMIN:
+      raise ForbiddenError("Cannot delete admin accounts")
+    if user.id == actor.id:
+      raise ForbiddenError("Cannot delete your own account")
+
+    subscription_ids = [sub.id for sub in Subscription.query.filter_by(user_id=user.id).all()]
+    if subscription_ids:
+      Transaction.query.filter(
+        Transaction.subscription_id.in_(subscription_ids)
+      ).delete(synchronize_session=False)
+
+    Transaction.query.filter_by(user_id=user.id).delete(synchronize_session=False)
+    BankImport.query.filter_by(user_id=user.id).update(
+      {BankImport.user_id: None},
+      synchronize_session=False,
+    )
+    db.session.delete(user)
+    db.session.commit()
+    logger.info("Deleted user_id=%s by actor_id=%s", user_id, actor.id)
 
   @staticmethod
   def get_profile_summary(user: User) -> dict:

@@ -193,23 +193,37 @@ class UserResource(Resource):
       from app.utils.errors import ForbiddenError
 
       raise ForbiddenError("Access denied")
-    return user.to_dict()
+    return user.to_dict(include_admin=g.current_user.is_admin())
 
   @_handle_errors
   @admin_required
   def patch(self, user_id):
+    from decimal import Decimal
+
     payload = users_ns.payload or {}
     status = UserStatus(payload["status"]) if "status" in payload else None
+    balance = Decimal(str(payload["balance"])) if "balance" in payload else None
     user = UserService.update_user(
       user_id,
       actor=g.current_user,
+      phone_number=payload.get("phone_number"),
+      id_number=payload.get("id_number"),
       status=status,
       first_name=payload.get("first_name"),
       last_name=payload.get("last_name"),
       email=payload.get("email"),
+      balance=balance,
       password=payload.get("password"),
+      admin_comment=payload.get("admin_comment"),
+      admin_comment_set="admin_comment" in payload,
     )
-    return user.to_dict()
+    return user.to_dict(include_admin=True)
+
+  @_handle_errors
+  @admin_required
+  def delete(self, user_id):
+    UserService.delete(user_id, actor=g.current_user)
+    return "", 204
 
 
 @buildings_ns.route("")
@@ -246,7 +260,27 @@ class BuildingResource(Resource):
   @_handle_errors
   @admin_required
   def get(self, building_id):
-    return BuildingService.get_by_id(building_id).to_dict()
+    return BuildingService.get_by_id(building_id).to_dict(include_admin=True)
+
+  @_handle_errors
+  @admin_required
+  def patch(self, building_id):
+    payload = buildings_ns.payload or {}
+    building = BuildingService.update(
+      building_id,
+      building_number=payload.get("building_number"),
+      name=payload.get("name"),
+      address=payload.get("address"),
+      admin_comment=payload.get("admin_comment"),
+      admin_comment_set="admin_comment" in payload,
+    )
+    return building.to_dict(include_admin=True)
+
+  @_handle_errors
+  @admin_required
+  def delete(self, building_id):
+    BuildingService.delete(building_id)
+    return "", 204
 
 
 @subscriptions_ns.route("")
@@ -295,17 +329,46 @@ class SubscriptionResource(Resource):
   @admin_required
   def get(self, subscription_id):
     sub = SubscriptionService.get_by_id(subscription_id)
-    return sub.to_dict(include_building=True, include_user=True)
+    return sub.to_dict(include_building=True, include_user=True, include_admin=True)
 
   @_handle_errors
   @admin_required
   def patch(self, subscription_id):
+    from datetime import datetime
+    from decimal import Decimal
+
     payload = subscriptions_ns.payload or {}
-    if "status" not in payload:
-      subscriptions_ns.abort(400, "status is required")
-    status = SubscriptionStatus(payload["status"])
-    sub = SubscriptionService.update_status(subscription_id, status)
-    return sub.to_dict(include_building=True)
+    due = None
+    due_set = False
+    if "next_payment_due" in payload:
+      due_set = True
+      if payload.get("next_payment_due"):
+        due = datetime.strptime(payload["next_payment_due"], "%Y-%m-%d").date()
+
+    status = (
+      SubscriptionStatus(payload["status"]) if "status" in payload else None
+    )
+    sub = SubscriptionService.update(
+      subscription_id,
+      user_id=payload.get("user_id"),
+      building_id=payload.get("building_id"),
+      door_number=payload.get("door_number"),
+      monthly_fee=(
+        Decimal(str(payload["monthly_fee"])) if "monthly_fee" in payload else None
+      ),
+      next_payment_due=due,
+      next_payment_due_set=due_set,
+      status=status,
+      admin_comment=payload.get("admin_comment"),
+      admin_comment_set="admin_comment" in payload,
+    )
+    return sub.to_dict(include_building=True, include_admin=True)
+
+  @_handle_errors
+  @admin_required
+  def delete(self, subscription_id):
+    SubscriptionService.delete(subscription_id)
+    return "", 204
 
 
 @chips_ns.route("")
@@ -346,7 +409,17 @@ class ChipResource(Resource):
   @_handle_errors
   @admin_required
   def delete(self, chip_id):
-    """Deactivate a chip."""
+    """Permanently delete a chip."""
+    ChipService.delete(chip_id)
+    return "", 204
+
+
+@chips_ns.route("/<int:chip_id>/deactivate")
+class DeactivateChipResource(Resource):
+  @_handle_errors
+  @admin_required
+  def post(self, chip_id):
+    """Deactivate a chip without deleting it."""
     chip = ChipService.deactivate(chip_id)
     return chip.to_dict()
 

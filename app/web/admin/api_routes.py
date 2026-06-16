@@ -22,7 +22,7 @@ def _user_option(user):
 def _building_option(building):
   return {
     "id": building.id,
-    "label": building.building_number,
+    "label": f"{building.building_number} (#{building.id})",
     "sub": building.name,
   }
 

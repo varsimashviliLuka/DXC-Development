@@ -142,6 +142,55 @@ function initComboboxes() {
   });
 }
 
+function initTransactionDialogs() {
+  const openDialog = (id) => {
+    if (!id) return;
+    const dialog = document.getElementById(id);
+    if (!dialog || typeof dialog.showModal !== "function") return;
+    dialog.showModal();
+    document.body.classList.add("modal-open");
+  };
+
+  const closeDialog = (dialog) => {
+    if (!dialog) return;
+    dialog.close();
+    document.body.classList.remove("modal-open");
+  };
+
+  document.querySelectorAll("[data-open-bank-details]").forEach((el) => {
+    const dialogId = el.dataset.openBankDetails;
+    const open = () => openDialog(dialogId);
+
+    if (el.matches("button")) {
+      el.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        open();
+      });
+    }
+
+    if (el.matches("tr")) {
+      el.addEventListener("dblclick", open);
+    }
+  });
+
+  document.querySelectorAll(".txn-dialog").forEach((dialog) => {
+    dialog.addEventListener("click", (e) => {
+      if (e.target === dialog) closeDialog(dialog);
+    });
+
+    dialog.querySelectorAll("[data-close-dialog]").forEach((btn) => {
+      btn.addEventListener("click", () => closeDialog(dialog));
+    });
+
+    dialog.addEventListener("close", () => {
+      if (!document.querySelector(".txn-dialog[open]")) {
+        document.body.classList.remove("modal-open");
+      }
+    });
+  });
+}
+
 function escapeHtml(str) {
   return String(str)
     .replace(/&/g, "&amp;")
@@ -154,4 +203,5 @@ document.addEventListener("DOMContentLoaded", () => {
   initFlashMessages();
   initMobileNav();
   initComboboxes();
+  initTransactionDialogs();
 });

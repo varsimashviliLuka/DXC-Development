@@ -87,6 +87,13 @@ class ChipService:
     return chip
 
   @staticmethod
+  def delete(chip_id: int) -> None:
+    chip = ChipService.get_by_id(chip_id)
+    db.session.delete(chip)
+    db.session.commit()
+    logger.info("Deleted chip_id=%s chip=%s", chip.id, chip.chip_number)
+
+  @staticmethod
   def set_status(chip_id: int, active: bool) -> Chip:
     if active:
       return ChipService.activate(chip_id)

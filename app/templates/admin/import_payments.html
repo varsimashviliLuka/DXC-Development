@@ -27,16 +27,16 @@
       </thead>
       <tbody>
         <tr>
-          <td>Paying own fee</td>
-          <td>Nothing extra (matched via Partner's Tax Code)</td>
+          <td>Paying for one door</td>
+          <td><code>350012A</code> (building id + building number + door)</td>
         </tr>
         <tr>
-          <td>Paying for another person</td>
-          <td><code>UID:01010017857</code> (beneficiary personal number)</td>
+          <td>Paying for multiple doors in one transfer</td>
+          <td><code>350012A, 350014B</code></td>
         </tr>
         <tr>
-          <td>Paying for another by phone</td>
-          <td><code>UID:+995592159199</code></td>
+          <td>No door reference in description</td>
+          <td>Fallback match uses Partner's Tax Code / Partner Name parsing</td>
         </tr>
       </tbody>
     </table>

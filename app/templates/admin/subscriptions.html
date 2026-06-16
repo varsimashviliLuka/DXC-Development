@@ -49,6 +49,11 @@
         {% endfor %}
       </select>
     </div>
+    <div class="form-group form-group-full">
+      <label for="admin_comment">Admin comment</label>
+      <textarea id="admin_comment" name="admin_comment" rows="3"
+                placeholder="Internal notes visible only to admins">{{ form.get('admin_comment', '') }}</textarea>
+    </div>
     <div class="form-actions">
       <button type="submit" class="btn btn-primary">Create subscription</button>
     </div>
@@ -67,23 +72,33 @@
           <th>User</th>
           <th>Building</th>
           <th>Door</th>
+          <th>Payment reference</th>
           <th>Fee</th>
           <th>Status</th>
           <th>Next due</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
         {% for sub in subscriptions %}
         <tr>
           <td>{{ sub.user.phone_number if sub.user else sub.user_id }}</td>
-          <td>{{ sub.building.building_number if sub.building else sub.building_id }}</td>
+          <td>{{ sub.building.building_number if sub.building else sub.building_id }}{% if sub.building %} <span class="muted">(#{{ sub.building.id }})</span>{% endif %}</td>
           <td>{{ sub.door_number }}</td>
+          <td><code>{{ sub.payment_reference or '—' }}</code></td>
           <td>{{ money(sub.monthly_fee) }}</td>
           <td>{{ badge(sub.status) }}</td>
           <td>{{ sub.next_payment_due or '—' }}</td>
+          <td class="table-actions">
+            <a href="{{ url_for('admin.edit_subscription', subscription_id=sub.id) }}" class="btn btn-ghost btn-sm">Edit</a>
+            <form method="post" action="{{ url_for('admin.delete_subscription', subscription_id=sub.id) }}" class="inline-form"
+                  onsubmit="return confirm('Delete this subscription permanently?');">
+              <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+            </form>
+          </td>
         </tr>
         {% else %}
-        <tr><td colspan="6" class="muted">No subscriptions found.</td></tr>
+        <tr><td colspan="8" class="muted">No subscriptions found.</td></tr>
         {% endfor %}
       </tbody>
     </table>

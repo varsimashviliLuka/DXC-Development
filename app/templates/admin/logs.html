@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% from "macros/ui.html" import page_header %}
+
+{% block title %}Logs — Admin{% endblock %}
+
+{% block content %}
+<div class="logs-page">
+  {{ page_header("Application logs", log_file ~ " · " ~ (log_file_size // 1024) ~ " KB") }}
+
+  <details class="panel logs-filters" {% if level_filter or module_filter or text_filter or date_filter %}open{% else %}open{% endif %}>
+    <summary class="logs-filters-summary">
+      <span>Filters</span>
+    </summary>
+    <form method="get" class="form form-grid logs-filter-form" id="log-filter-form">
+      <div class="form-group">
+        <label for="log_level">Level</label>
+        <select id="log_level" name="level">
+          <option value="">All levels</option>
+          {% for lvl in all_levels %}
+            <option value="{{ lvl }}" {% if level_filter == lvl %}selected{% endif %}>{{ lvl }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="log_date">Date (YYYY-MM-DD)</label>
+        <input type="date" id="log_date" name="date" value="{{ date_filter }}">
+      </div>
+
+      <div class="form-group">
+        <label for="log_module">Module contains</label>
+        <input type="text" id="log_module" name="module" value="{{ module_filter }}" placeholder="e.g. auth_service">
+      </div>
+
+      <div class="form-group">
+        <label for="log_q">Message / module search</label>
+        <input type="text" id="log_q" name="q" value="{{ text_filter }}" placeholder="Search in messages...">
+      </div>
+
+      <div class="form-actions logs-filter-actions">
+        <button type="submit" class="btn btn-primary">Apply</button>
+        <a href="{{ url_for('admin.logs') }}" class="btn btn-ghost">Reset</a>
+      </div>
+    </form>
+  </details>
+
+  <div class="panel logs-results-panel">
+    <div class="panel-header logs-results-header">
+      <div>
+        <h2>Log entries</h2>
+        <p class="muted logs-results-meta">
+          {{ total }} entr{{ 'y' if total == 1 else 'ies' }}
+          {% if total > per_page %} · showing {{ per_page }} per page{% endif %}
+          · newest first
+        </p>
+      </div>
+      <div class="logs-controls">
+        <a href="{{ url_for('admin.logs', level=level_filter, module=module_filter, q=text_filter, date=date_filter) }}"
+           class="btn btn-ghost btn-sm">&#8635; Refresh</a>
+      </div>
+    </div>
+
+    {% if lines %}
+      <div class="logs-table-wrap" id="logs-container">
+        <table class="data-table logs-table">
+          <thead>
+            <tr>
+              <th class="col-ts">Timestamp</th>
+              <th class="col-level">Level</th>
+              <th class="col-logger">Module</th>
+              <th class="col-req">Req ID</th>
+              <th class="col-msg">Message</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for line in lines %}
+              <tr class="log-row log-level-{{ line.level | lower }}">
+                <td class="col-ts log-ts">{{ line.ts }}</td>
+                <td class="col-level">
+                  <span class="log-badge log-badge-{{ line.level | lower }}">{{ line.level }}</span>
+                </td>
+                <td class="col-logger log-logger">{{ line.logger }}</td>
+                <td class="col-req log-req">{{ line.req_id if line.req_id != '-' else '' }}</td>
+                <td class="col-msg log-msg">{{ line.message }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% if pages > 1 %}
+        <nav class="pagination logs-pagination">
+          {% if has_prev %}
+            <a class="btn btn-ghost btn-sm"
+               href="{{ url_for('admin.logs', page=page-1, level=level_filter, module=module_filter, q=text_filter, date=date_filter) }}">
+              &larr; Newer
+            </a>
+          {% endif %}
+          <span class="pagination-info">Page {{ page }} of {{ pages }} &mdash; {{ total }} entries</span>
+          {% if has_next %}
+            <a class="btn btn-ghost btn-sm"
+               href="{{ url_for('admin.logs', page=page+1, level=level_filter, module=module_filter, q=text_filter, date=date_filter) }}">
+              Older &rarr;
+            </a>
+          {% endif %}
+        </nav>
+      {% endif %}
+    {% else %}
+      <div class="logs-empty">
+        <p>No log entries match the current filters.</p>
+        <a href="{{ url_for('admin.logs') }}" class="btn btn-ghost btn-sm">Clear filters</a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -82,6 +82,7 @@ class AuthService:
     last_name: str | None = None,
     email: str | None = None,
     status: UserStatus = UserStatus.ACTIVE,
+    admin_comment: str | None = None,
   ) -> User:
     phone = normalize_phone(phone_number)
     id_num = validate_id_number(id_number)
@@ -105,6 +106,7 @@ class AuthService:
       status=status,
       first_name=(first_name or "").strip() or None,
       last_name=(last_name or "").strip() or None,
+      admin_comment=(admin_comment or "").strip() or None,
     )
     db.session.add(user)
     db.session.commit()

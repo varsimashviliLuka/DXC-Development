@@ -14,6 +14,7 @@
         <tr>
           <th>Building</th>
           <th>Door</th>
+          <th>Payment reference</th>
           <th>Monthly fee</th>
           <th>Status</th>
           <th>Next payment due</th>
@@ -24,6 +25,7 @@
         <tr>
           <td>{{ sub.building.name if sub.building else sub.building_id }}</td>
           <td>{{ sub.door_number }}</td>
+          <td><code>{{ sub.payment_reference or '—' }}</code></td>
           <td>{{ money(sub.monthly_fee) }}</td>
           <td>{{ badge(sub.status) }}</td>
           <td>{{ sub.next_payment_due or '—' }}</td>

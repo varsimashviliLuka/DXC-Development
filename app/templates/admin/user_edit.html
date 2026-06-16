@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% from "macros/ui.html" import page_header %}
+
+{% block title %}Edit User — Admin{% endblock %}
+
+{% block content %}
+{{ page_header("Edit user", "Update resident account details.") }}
+
+<section class="panel">
+  <form method="post" class="form form-grid">
+    <div class="form-group">
+      <label for="phone_number">Phone</label>
+      <input type="text" id="phone_number" name="phone_number" required
+             value="{{ form.get('phone_number', user.phone_number) }}">
+    </div>
+    <div class="form-group">
+      <label for="id_number">ID number</label>
+      <input type="text" id="id_number" name="id_number" required
+             value="{{ form.get('id_number', user.id_number) }}">
+    </div>
+    <div class="form-group">
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email"
+             value="{{ form.get('email', user.email or '') }}">
+    </div>
+    <div class="form-group">
+      <label for="password">New password</label>
+      <input type="password" id="password" name="password"
+             placeholder="Leave blank to keep current password">
+    </div>
+    <div class="form-group">
+      <label for="first_name">First name</label>
+      <input type="text" id="first_name" name="first_name"
+             value="{{ form.get('first_name', user.first_name or '') }}">
+    </div>
+    <div class="form-group">
+      <label for="last_name">Last name</label>
+      <input type="text" id="last_name" name="last_name"
+             value="{{ form.get('last_name', user.last_name or '') }}">
+    </div>
+    <div class="form-group">
+      <label for="balance">Balance (₾)</label>
+      <input type="number" step="0.01" id="balance" name="balance"
+             value="{{ form.get('balance', user.balance) }}">
+    </div>
+    <div class="form-group">
+      <label for="status">Status</label>
+      <select id="status" name="status">
+        {% for s in statuses %}
+        <option value="{{ s.value }}"
+          {% if (form.get('status') or user.status.value) == s.value %}selected{% endif %}>
+          {{ s.value }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group form-group-full">
+      <label for="admin_comment">Admin comment</label>
+      <textarea id="admin_comment" name="admin_comment" rows="4"
+                placeholder="Internal notes visible only to admins">{{ form.get('admin_comment', user.admin_comment or '') }}</textarea>
+    </div>
+    <div class="form-actions">
+      <a href="{{ url_for('admin.users') }}" class="btn btn-ghost">Cancel</a>
+      <button type="submit" class="btn btn-primary">Save changes</button>
+    </div>
+  </form>
+  <form method="post" action="{{ url_for('admin.delete_user', user_id=user.id) }}" class="form form-actions"
+        onsubmit="return confirm('Delete this user permanently? Subscriptions, chips, and transactions will be removed.');">
+    <button type="submit" class="btn btn-danger">Delete user</button>
+  </form>
+</section>
+{% endblock %}

@@ -10,7 +10,7 @@ def test_chip_activate_deactivate(client, admin_headers, registered_user):
   assert chip_resp.status_code == 201
   chip_id = chip_resp.get_json()["id"]
 
-  deactivate = client.delete(f"/api/v1/chips/{chip_id}", headers=admin_headers)
+  deactivate = client.post(f"/api/v1/chips/{chip_id}/deactivate", headers=admin_headers)
   assert deactivate.status_code == 200
   assert deactivate.get_json()["status"] == "inactive"
 

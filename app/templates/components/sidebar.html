@@ -12,6 +12,8 @@
     <a href="{{ url_for('admin.buildings') }}" class="sidebar-link{% if request.endpoint == 'admin.buildings' %} active{% endif %}">Buildings</a>
     <a href="{{ url_for('admin.subscriptions') }}" class="sidebar-link{% if request.endpoint == 'admin.subscriptions' %} active{% endif %}">Subscriptions</a>
     <a href="{{ url_for('admin.chips') }}" class="sidebar-link{% if request.endpoint == 'admin.chips' %} active{% endif %}">Chips</a>
+    <a href="{{ url_for('admin.transactions') }}" class="sidebar-link{% if request.endpoint == 'admin.transactions' %} active{% endif %}">Transactions</a>
+    <a href="{{ url_for('admin.logs') }}" class="sidebar-link{% if request.endpoint == 'admin.logs' %} active{% endif %}">Logs</a>
     <a href="{{ url_for('admin.import_payments') }}" class="sidebar-link{% if request.endpoint == 'admin.import_payments' %} active{% endif %}">Import payments</a>
     <a href="{{ url_for('admin.unmatched_payments') }}" class="sidebar-link{% if request.endpoint == 'admin.unmatched_payments' %} active{% endif %}">Unmatched</a>
   </nav>

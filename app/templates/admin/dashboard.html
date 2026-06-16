@@ -64,11 +64,12 @@
 <section class="panel">
   <h2>Payment instructions for customers</h2>
   <div class="info-box">
-    <p><strong>Paying for yourself:</strong> no extra text needed — the bank sends your personal number as <em>Partner's Tax Code</em> and we match it automatically.</p>
-    <p><strong>Paying for someone else:</strong> add this to the payment description or additional description field:</p>
-    <pre class="code-block">UID:01010017857</pre>
-    <p class="muted">Use the beneficiary's personal number (ID) or phone: <code>UID:+995592159199</code></p>
-    <p class="muted">The <code>UID:</code> token always takes priority over the payer's tax code.</p>
+    <p><strong>Paying for a door:</strong> put the subscription payment reference in the transfer description.</p>
+    <pre class="code-block">350012A</pre>
+    <p class="muted">Format: building id + building number + door number (no separators). Example above: building <code>3</code>, number <code>500</code>, door <code>12A</code>.</p>
+    <p><strong>Paying for multiple doors in one transfer:</strong> separate references with commas.</p>
+    <pre class="code-block">350012A, 350014B</pre>
+    <p class="muted">Payment references are listed on the Subscriptions page. If none is present, the system falls back to Partner's Tax Code and Partner Name parsing.</p>
   </div>
 </section>
 

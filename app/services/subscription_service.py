@@ -27,6 +27,7 @@ class SubscriptionService:
     monthly_fee: Decimal,
     next_payment_due: date | None = None,
     status: SubscriptionStatus = SubscriptionStatus.ACTIVE,
+    admin_comment: str | None = None,
   ) -> Subscription:
     user = UserService.get_by_id(user_id)
     building = BuildingService.get_by_id(building_id)
@@ -51,6 +52,7 @@ class SubscriptionService:
       monthly_fee=monthly_fee,
       status=status,
       next_payment_due=due_date,
+      admin_comment=(admin_comment or "").strip() or None,
     )
     db.session.add(subscription)
     db.session.commit()
@@ -104,12 +106,75 @@ class SubscriptionService:
     )
 
   @staticmethod
+  def update(
+    subscription_id: int,
+    *,
+    user_id: int | None = None,
+    building_id: int | None = None,
+    door_number: str | None = None,
+    monthly_fee: Decimal | None = None,
+    next_payment_due: date | None = None,
+    next_payment_due_set: bool = False,
+    status: SubscriptionStatus | None = None,
+    admin_comment: str | None = None,
+    admin_comment_set: bool = False,
+  ) -> Subscription:
+    subscription = SubscriptionService.get_by_id(subscription_id)
+
+    if user_id is not None:
+      subscription.user = UserService.get_by_id(user_id)
+
+    if building_id is not None:
+      subscription.building = BuildingService.get_by_id(building_id)
+
+    if door_number is not None:
+      subscription.door_number = validate_door_number(door_number)
+
+    if monthly_fee is not None:
+      if monthly_fee < 0:
+        raise ValueError("Monthly fee cannot be negative")
+      subscription.monthly_fee = monthly_fee
+
+    if next_payment_due_set:
+      subscription.next_payment_due = next_payment_due
+
+    if status is not None:
+      subscription.status = status
+
+    if admin_comment_set:
+      subscription.admin_comment = (admin_comment or "").strip() or None
+
+    existing_door = Subscription.query.filter(
+      Subscription.building_id == subscription.building_id,
+      Subscription.door_number == subscription.door_number,
+      Subscription.id != subscription.id,
+    ).first()
+    if existing_door:
+      raise ConflictError("Door number already assigned in this building")
+
+    db.session.commit()
+    logger.info("Updated subscription_id=%s", subscription.id)
+    return subscription
+
+  @staticmethod
   def update_status(subscription_id: int, status: SubscriptionStatus) -> Subscription:
     subscription = SubscriptionService.get_by_id(subscription_id)
     subscription.status = status
     db.session.commit()
     logger.info("Updated subscription_id=%s status=%s", subscription_id, status.value)
     return subscription
+
+  @staticmethod
+  def delete(subscription_id: int) -> None:
+    from app.models import Transaction
+
+    subscription = SubscriptionService.get_by_id(subscription_id)
+    Transaction.query.filter_by(subscription_id=subscription.id).delete(
+      synchronize_session=False
+    )
+    db.session.delete(subscription)
+    db.session.commit()
+    logger.info("Deleted subscription_id=%s", subscription_id)
 
   @staticmethod
   def process_due_payments(for_date: date | None = None) -> dict:

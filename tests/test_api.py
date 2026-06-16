@@ -83,6 +83,22 @@ def test_password_change(client, user_headers, registered_user):
   assert new_login.status_code == 200
 
 
+def test_duplicate_building_numbers_allowed(client, admin_headers):
+  first = client.post(
+    "/api/v1/buildings",
+    json={"building_number": "100", "name": "Tower A"},
+    headers=admin_headers,
+  )
+  second = client.post(
+    "/api/v1/buildings",
+    json={"building_number": "100", "name": "Tower B"},
+    headers=admin_headers,
+  )
+  assert first.status_code == 201
+  assert second.status_code == 201
+  assert first.get_json()["id"] != second.get_json()["id"]
+
+
 def test_building_subscription_and_chip_flow(client, admin_headers, registered_user):
   building_response = client.post(
     "/api/v1/buildings",
@@ -150,15 +166,38 @@ def test_building_subscription_and_chip_flow(client, admin_headers, registered_u
 
 
 def test_csv_payment_import(client, admin_headers, registered_user):
+  from app.utils.payment_matching import build_payment_reference
   from tests.bank_csv_fixtures import build_bank_csv, make_bank_csv_row
 
-  # User id_number USER1234 — match via UID token (paying for self with explicit UID)
+  building_response = client.post(
+    "/api/v1/buildings",
+    json={"building_number": "500", "name": "Import Test Building"},
+    headers=admin_headers,
+  )
+  building = building_response.get_json()
+  building_id = building["id"]
+  payment_reference = build_payment_reference(building_id, building["building_number"], "12A")
+
+  users = client.get("/api/v1/users", headers=admin_headers).get_json()["items"]
+  user_id = next(u["id"] for u in users if u["phone_number"] == registered_user["phone_number"])
+
+  client.post(
+    "/api/v1/subscriptions",
+    json={
+      "user_id": user_id,
+      "building_id": building_id,
+      "door_number": "12A",
+      "monthly_fee": 30.00,
+    },
+    headers=admin_headers,
+  )
+
   csv_content = build_bank_csv(
     make_bank_csv_row(
       amount="100.0",
       partner_tax="01099999999",
       partner_name="Someone Else",
-      additional_description="UID:USER1234",
+      description=payment_reference,
       transaction_id="18705073767.20",
     )
   )
@@ -178,6 +217,84 @@ def test_csv_payment_import(client, admin_headers, registered_user):
     if u["phone_number"] == registered_user["phone_number"]
   )
   assert user["balance"] == 100.0
+
+
+def test_bank_import_split_across_multiple_door_references(client, admin_headers):
+  from app.utils.payment_matching import build_payment_reference
+  from tests.bank_csv_fixtures import build_bank_csv, make_bank_csv_row
+
+  user_one = client.post(
+    "/api/v1/users",
+    json={
+      "phone_number": "+995555111333",
+      "id_number": "01010018013",
+      "password": "UserPass123",
+    },
+    headers=admin_headers,
+  ).get_json()
+  user_two = client.post(
+    "/api/v1/users",
+    json={
+      "phone_number": "+995555111444",
+      "id_number": "01010018014",
+      "password": "UserPass123",
+    },
+    headers=admin_headers,
+  ).get_json()
+
+  building = client.post(
+    "/api/v1/buildings",
+    json={"building_number": "900", "name": "Split Test Building"},
+    headers=admin_headers,
+  ).get_json()
+  building_id = building["id"]
+  first_reference = build_payment_reference(building_id, building["building_number"], "1A")
+  second_reference = build_payment_reference(building_id, building["building_number"], "2B")
+
+  client.post(
+    "/api/v1/subscriptions",
+    json={
+      "user_id": user_one["id"],
+      "building_id": building_id,
+      "door_number": "1A",
+      "monthly_fee": 25.0,
+    },
+    headers=admin_headers,
+  )
+  client.post(
+    "/api/v1/subscriptions",
+    json={
+      "user_id": user_two["id"],
+      "building_id": building_id,
+      "door_number": "2B",
+      "monthly_fee": 25.0,
+    },
+    headers=admin_headers,
+  )
+
+  csv_content = build_bank_csv(
+    make_bank_csv_row(
+      amount="100.0",
+      partner_tax="01099999999",
+      partner_name="Someone Else",
+      description=f"{first_reference}, {second_reference}",
+      transaction_id="18705073770.20",
+    )
+  )
+  response = client.post(
+    "/api/v1/transactions/import",
+    data={"file": (io.BytesIO(csv_content.encode("utf-8")), "split.csv")},
+    headers=admin_headers,
+    content_type="multipart/form-data",
+  )
+  assert response.status_code == 200
+  assert response.get_json()["matched"] == 1
+
+  users_after = client.get("/api/v1/users", headers=admin_headers).get_json()["items"]
+  first_after = next(u for u in users_after if u["id"] == user_one["id"])
+  second_after = next(u for u in users_after if u["id"] == user_two["id"])
+  assert first_after["balance"] == 50.0
+  assert second_after["balance"] == 50.0
 
 
 def test_bank_import_by_partner_tax_code(client, admin_headers):

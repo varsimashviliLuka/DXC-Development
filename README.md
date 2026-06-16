@@ -102,7 +102,7 @@ Only **Income** rows with positive amounts are processed. Each row is saved to `
 
 ### Matching priority
 
-1. **`UID:` token** in Description / Additional Description (highest priority — use when paying for someone else)
+1. **Building payment reference** in Description / Additional fields (highest priority), e.g. `350012A` (`building.id` + `building_number` + `door_number`, no separators)
 2. **Partner's Tax Code** → user's `id_number`
 3. **ID at end of Partner's Name** (e.g. `", 01010015553"`)
 
@@ -110,11 +110,11 @@ Only **Income** rows with positive amounts are processed. Each row is saved to `
 
 | Scenario | Payment description |
 |----------|-------------------|
-| Paying own fee | Nothing extra — bank sends your personal number as Partner's Tax Code |
-| Paying for another person | `UID:01010017857` (their personal number) |
-| Paying for another by phone | `UID:+995592159199` |
+| Paying for one door | `350012A` (building id `3`, building number `500`, door `12A`) |
+| Paying for multiple doors in one transfer | `350012A, 350014B` |
+| No description provided | Falls back to Partner's Tax Code / Partner Name parsing |
 
-Aliases also accepted: `FOR:`, `BENEFICIARY:`, `ACCOUNT:`
+Each subscription has a unique payment reference shown in the admin subscriptions list.
 
 ### Unmatched payments
 

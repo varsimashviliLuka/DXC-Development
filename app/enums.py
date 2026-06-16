@@ -48,6 +48,7 @@ class ImportMatchStatus(str, enum.Enum):
 
 
 class PaymentMatchMethod(str, enum.Enum):
+  DOOR_REFERENCE = "door_reference"
   UID_TOKEN = "uid_token"
   PARTNER_TAX_CODE = "partner_tax_code"
   PARTNER_NAME_ID = "partner_name_id"

@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSV Generator — Bank Transactions</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d1117;
+  --s1: #161b22;
+  --s2: #21262d;
+  --s3: #30363d;
+  --border: #2d333b;
+  --text: #cdd9e5;
+  --muted: #768390;
+  --blue: #316dca;
+  --blue-h: #4184e4;
+  --green: #3fb950;
+  --red: #f85149;
+  --amber: #d29922;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'Inter', system-ui, sans-serif;
+  --r: 6px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 13px;
+  min-height: 100vh;
+}
+
+/* ── Header ── */
+.header {
+  background: var(--s1);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  gap: 12px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.brand-icon {
+  width: 30px;
+  height: 30px;
+  background: linear-gradient(135deg, #316dca, #1f4f9c);
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.header-right {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  background: var(--s2);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+  font-family: var(--sans);
+  white-space: nowrap;
+  line-height: 1;
+}
+.btn:hover { background: var(--s3); border-color: var(--muted); }
+
+.btn-primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+.btn-primary:hover { background: var(--blue-h); border-color: var(--blue-h); }
+
+.btn-ghost { background: transparent; border-color: transparent; color: var(--muted); }
+.btn-ghost:hover { background: var(--s2); color: var(--text); border-color: var(--border); }
+
+.btn-danger-ghost { background: transparent; border-color: transparent; color: var(--red); opacity: 0.7; }
+.btn-danger-ghost:hover { background: rgba(248,81,73,.12); opacity: 1; border-color: transparent; }
+
+.btn-sm { padding: 4px 10px; font-size: 11px; }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: rgba(63,185,80,.25);
+  color: var(--green);
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--mono);
+}
+
+/* ── Layout ── */
+.main {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ── Panel ── */
+.panel {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.panel-hdr {
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.1s;
+}
+.panel-hdr:hover { background: var(--s2); }
+.panel-hdr.no-click { cursor: default; }
+.panel-hdr.no-click:hover { background: transparent; }
+
+.panel-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel-title .count {
+  color: var(--text);
+  font-size: 12px;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+}
+
+.chevron {
+  color: var(--muted);
+  font-size: 9px;
+  transition: transform .2s;
+}
+.chevron.up { transform: rotate(180deg); }
+
+.panel-body { padding: 16px; }
+
+/* ── Form ── */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(178px, 1fr));
+  gap: 10px 12px;
+}
+
+.span2 { grid-column: span 2; }
+.span3 { grid-column: span 3; }
+
+.fgroup { display: flex; flex-direction: column; gap: 5px; }
+
+label {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+label .req { color: var(--red); }
+label .geo { font-size: 10px; opacity: .65; }
+
+input, select {
+  background: var(--s2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 7px 10px;
+  border-radius: var(--r);
+  font-size: 12px;
+  font-family: var(--sans);
+  width: 100%;
+  transition: border-color .15s, background .15s;
+  outline: none;
+  -webkit-appearance: none;
+}
+input:focus, select:focus {
+  border-color: var(--blue);
+  background: #1a2333;
+}
+input.mono { font-family: var(--mono); }
+select { cursor: pointer; }
+select option { background: var(--s1); }
+
+input::placeholder { color: var(--s3); }
+
+.sep {
+  height: 1px;
+  background: var(--border);
+  margin: 14px 0;
+}
+
+.section-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--muted);
+  padding-bottom: 8px;
+  font-weight: 600;
+}
+
+.opt-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--blue);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 4px 0;
+  user-select: none;
+  margin-top: 4px;
+}
+.opt-toggle:hover { color: var(--blue-h); }
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+/* ── Table ── */
+.table-scroll { overflow-x: auto; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+thead tr { border-bottom: 2px solid var(--border); }
+
+th {
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--muted);
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+tbody tr {
+  border-bottom: 1px solid rgba(45,51,59,.7);
+  transition: background .1s;
+}
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: rgba(33,38,45,.7); }
+
+td {
+  padding: 8px 12px;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+td.idx { color: var(--muted); font-family: var(--mono); font-size: 10px; width: 36px; }
+td.mono { font-family: var(--mono); font-size: 11px; }
+td.trunc { max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
+
+.type-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .03em;
+}
+.income-pill { background: rgba(63,185,80,.15); color: var(--green); }
+.expense-pill { background: rgba(248,81,73,.15); color: var(--red); }
+
+.amt { font-family: var(--mono); font-weight: 500; }
+.amt-in { color: var(--green); }
+.amt-out { color: var(--red); }
+
+/* ── Empty state ── */
+.empty {
+  text-align: center;
+  padding: 56px 24px;
+  color: var(--muted);
+}
+.empty-icon { font-size: 28px; margin-bottom: 10px; opacity: .6; }
+.empty-txt { font-size: 13px; }
+
+/* ── Footer / Stats ── */
+.stats-bar {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--muted);
+}
+.stat { display: flex; gap: 6px; align-items: center; }
+.stat-val { font-family: var(--mono); font-weight: 500; }
+.stat-in { color: var(--green); }
+.stat-out { color: var(--red); }
+
+/* ── Toast ── */
+.toasts {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 9999;
+}
+.toast {
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 9px 14px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 6px 20px rgba(0,0,0,.5);
+  animation: tin .18s ease;
+}
+.toast.ok { border-left: 3px solid var(--green); }
+.toast.err { border-left: 3px solid var(--red); }
+@keyframes tin { from { transform: translateX(110%); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes tout { from { transform: none; opacity: 1; } to { transform: translateX(110%); opacity: 0; } }
+</style>
+</head>
+<body>
+
+<!-- ═══ HEADER ═══ -->
+<div class="header">
+  <div class="brand">
+    <div class="brand-icon">📊</div>
+    Bank CSV Generator
+  </div>
+  <div class="header-right">
+    <button class="btn btn-ghost" onclick="clearAll()">🗑 Clear All</button>
+    <button class="btn btn-primary" onclick="exportCSV()">
+      ↓ Export CSV&nbsp;<span class="badge" id="exportBadge">0</span>
+    </button>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- ═══ SETTINGS ═══ -->
+  <div class="panel">
+    <div class="panel-hdr" onclick="togglePanel('sets')">
+      <div class="panel-title">⚙ Account Defaults</div>
+      <div class="chevron up" id="setsChv">▼</div>
+    </div>
+    <div id="setsBody" class="panel-body">
+      <div class="form-grid">
+        <div class="fgroup span2">
+          <label>Account Number <span class="geo">/ ანგარიშის ნომერი</span></label>
+          <input type="text" id="s_acctNum" class="mono" placeholder="GE91TB7473634050100001" value="GE91TB7473634050100001">
+        </div>
+        <div class="fgroup span2">
+          <label>Account Name <span class="geo">/ ანგარიშის დასახელება</span></label>
+          <input type="text" id="s_acctName" placeholder="DXC Elevator Account" value="DXC Elevator Account">
+        </div>
+        <div class="fgroup">
+          <label>Default Currency <span class="geo">/ ვალუტა</span></label>
+          <select id="s_cur" onchange="syncDefaults()">
+            <option value="GEL" selected>GEL</option>
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+          </select>
+        </div>
+        <div class="fgroup">
+          <label>Default Type <span class="geo">/ ტიპი</span></label>
+          <select id="s_type" onchange="syncDefaults()">
+            <option value="Income" selected>Income</option>
+            <option value="Expense">Expense</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ ADD FORM ═══ -->
+  <div class="panel">
+    <div class="panel-hdr" onclick="togglePanel('form')">
+      <div class="panel-title">+ Add Transaction</div>
+      <div class="chevron up" id="formChv">▼</div>
+    </div>
+    <div id="formBody" class="panel-body">
+
+      <div class="section-label">Core Fields</div>
+      <div class="form-grid">
+        <div class="fgroup">
+          <label>Date <span class="geo">/ თარიღი</span> <span class="req">*</span></label>
+          <input type="date" id="f_date">
+        </div>
+        <div class="fgroup">
+          <label>Document Date <span class="geo">/ საბუთის თარიღი</span></label>
+          <input type="date" id="f_docDate">
+        </div>
+        <div class="fgroup span2">
+          <label>Description <span class="geo">/ დანიშნულება</span> <span class="req">*</span></label>
+          <input type="text" id="f_desc" placeholder='e.g.  150012A   or   150012A, 150014B'>
+        </div>
+        <div class="fgroup">
+          <label>Type <span class="geo">/ ტრ. ტიპი</span> <span class="req">*</span></label>
+          <select id="f_type">
+            <option value="Income">Income</option>
+            <option value="Expense">Expense</option>
+          </select>
+        </div>
+        <div class="fgroup">
+          <label>Amount <span class="geo">/ თანხა</span> <span class="req">*</span></label>
+          <input type="number" id="f_amount" class="mono" placeholder="0.00" min="0" step="0.01">
+        </div>
+        <div class="fgroup">
+          <label>Currency <span class="geo">/ ვალუტა</span></label>
+          <select id="f_cur">
+            <option value="GEL">GEL</option>
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+          </select>
+        </div>
+        <div class="fgroup">
+          <label>Document № <span class="geo">/ საბუთის №</span></label>
+          <input type="text" id="f_docNum" class="mono" placeholder="840001">
+        </div>
+      </div>
+
+      <div class="sep"></div>
+      <div class="section-label">Partner Info</div>
+      <div class="form-grid">
+        <div class="fgroup span2">
+          <label>Partner's Account <span class="geo">/ პარტნიორის ანგარიში</span></label>
+          <input type="text" id="f_pAcct" class="mono" placeholder="GE21BG0000000184586000">
+        </div>
+        <div class="fgroup span2">
+          <label>Partner's Name <span class="geo">/ პარტნიორი</span></label>
+          <input type="text" id="f_pName" placeholder="Nino Beridze">
+        </div>
+        <div class="fgroup">
+          <label>Tax Code <span class="geo">/ საგადასახადო კოდი</span></label>
+          <input type="text" id="f_pTax" class="mono" placeholder="1099999999">
+        </div>
+        <div class="fgroup">
+          <label>Bank Code <span class="geo">/ ბანკის კოდი</span></label>
+          <input type="text" id="f_pBankCode" class="mono" placeholder="BAGAGE22">
+        </div>
+        <div class="fgroup span2">
+          <label>Bank Name <span class="geo">/ პარტნიორის ბანკი</span></label>
+          <input type="text" id="f_pBank" placeholder="Bank of Georgia">
+        </div>
+      </div>
+
+      <div class="sep"></div>
+      <div class="section-label">IDs &amp; Description</div>
+      <div class="form-grid">
+        <div class="fgroup span3">
+          <label>Additional Description <span class="geo">/ დამატებითი დანიშნულება</span></label>
+          <input type="text" id="f_addDesc" placeholder="TEST-IMPORT-001">
+        </div>
+        <div class="fgroup">
+          <label>Transaction ID <span class="geo">/ ტრანზ. ID</span></label>
+          <input type="text" id="f_txId" class="mono" placeholder="1">
+        </div>
+      </div>
+
+      <!-- Optional -->
+      <div class="opt-toggle" id="optToggle" onclick="toggleOpt()">▶ Show optional fields</div>
+
+      <div id="optBody" style="display:none;">
+        <div class="sep"></div>
+        <div class="section-label">Optional Fields</div>
+        <div class="form-grid">
+          <div class="fgroup span2">
+            <label>Additional Information <span class="geo">/ დამატებითი ინფ.</span></label>
+            <input type="text" id="f_addInfo">
+          </div>
+          <div class="fgroup">
+            <label>Intermediary Bank Code <span class="geo">/ შუამ. ბანკ. კოდი</span></label>
+            <input type="text" id="f_intCode" class="mono">
+          </div>
+          <div class="fgroup span2">
+            <label>Intermediary Bank <span class="geo">/ შუამავალი ბანკი</span></label>
+            <input type="text" id="f_intBank">
+          </div>
+          <div class="fgroup span2">
+            <label>Charge Details <span class="geo">/ ხარჯის ტიპი</span></label>
+            <input type="text" id="f_charge">
+          </div>
+          <div class="fgroup">
+            <label>Taxpayer Code <span class="geo">/ გადასახ. გადამხ. კოდი</span></label>
+            <input type="text" id="f_tpCode" class="mono">
+          </div>
+          <div class="fgroup span2">
+            <label>Taxpayer Name <span class="geo">/ გადასახ. გადამხ. დასახ.</span></label>
+            <input type="text" id="f_tpName">
+          </div>
+          <div class="fgroup">
+            <label>Treasury Code <span class="geo">/ სახაზინო კოდი</span></label>
+            <input type="text" id="f_treasury" class="mono">
+          </div>
+          <div class="fgroup">
+            <label>Op.Code <span class="geo">/ ოპ.კოდი</span></label>
+            <input type="text" id="f_opCode" class="mono">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-ghost" onclick="resetForm()">Reset</button>
+        <button class="btn btn-primary" onclick="addTx()">+ Add Transaction</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══ TRANSACTIONS TABLE ═══ -->
+  <div class="panel">
+    <div class="panel-hdr no-click">
+      <div class="panel-title">
+        📋 Transactions
+        <span class="count" id="txCountLabel">(0 rows)</span>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Date</th>
+            <th>Description</th>
+            <th>Type</th>
+            <th>Amount</th>
+            <th>Cur.</th>
+            <th>Doc №</th>
+            <th>Partner</th>
+            <th>Partner Account</th>
+            <th>Bank</th>
+            <th>Add. Description</th>
+            <th>TX ID</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="txBody">
+          <tr>
+            <td colspan="13">
+              <div class="empty">
+                <div class="empty-icon">📭</div>
+                <div class="empty-txt">No transactions yet. Fill in the form above to get started.</div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="stats-bar" id="statsBar" style="display:none;">
+      <div class="stat">Total rows: <span class="stat-val" id="statTotal">0</span></div>
+      <div class="stat">Income: <span class="stat-val stat-in" id="statIn">0</span></div>
+      <div class="stat">Expense: <span class="stat-val stat-out" id="statOut">0</span></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+const GEO_HDR = [
+  'თარიღი','დანიშნულება','ტრანზაქციის ტიპი','თანხა','ვალუტა',
+  'ანგარიშის ნომერი','ანგარიშის დასახელება','დამატებითი ინფორმაცია',
+  'საბუთის თარიღი','საბუთის №','პარტნიორის ანგარიში','პარტნიორი',
+  'პარტნიორის საგადასახადო კოდი','პარტნიორის ბანკის კოდი','პარტნიორის ბანკი',
+  'შუამავალი ბანკის კოდი','შუამავალი ბანკი','ხარჯის ტიპი',
+  'გადასახადის გადამხდელის კოდი','გადასახადის გადამხდელის დასახელება',
+  'სახაზინო კოდი','ოპ.კოდი','დამატებითი დანიშნულება','ტრანზაქციის ID'
+];
+
+const ENG_HDR = [
+  'Date','Description','Transaction Type','Amount','Currency',
+  'Account Number','Account Name','Additional Information',
+  'Document Date','Document Number',"Partner's Account","Partner's Name",
+  "Partner's Tax Code","Partner's Bank Code","Partner's Bank",
+  'Intermediary Bank Code','Intermediary Bank','Charge Details',
+  'Taxpayer Code','Taxpayer Name','Treasury Code','Op.Code',
+  'Additional Description','Transaction ID'
+];
+
+let txs = [];
+let autoId = 1;
+
+// ── Init ──
+(function init() {
+  const today = todayISO();
+  $('f_date').value = today;
+  $('f_docDate').value = today;
+  $('f_cur').value = $('s_cur').value;
+  $('f_type').value = $('s_type').value;
+  $('f_txId').value = autoId;
+})();
+
+function $(id) { return document.getElementById(id); }
+function val(id) { return $(id).value.trim(); }
+
+function todayISO() { return new Date().toISOString().split('T')[0]; }
+
+function toDisplayDate(iso) {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+function syncDefaults() {
+  $('f_cur').value = $('s_cur').value;
+  $('f_type').value = $('s_type').value;
+}
+
+function togglePanel(id) {
+  const body = $(id + 'Body');
+  const chv  = $(id + 'Chv');
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : '';
+  chv.classList.toggle('up', !open);
+}
+
+function toggleOpt() {
+  const el  = $('optBody');
+  const tog = $('optToggle');
+  const vis = el.style.display !== 'none';
+  el.style.display = vis ? 'none' : '';
+  tog.textContent = vis ? '▶ Show optional fields' : '▼ Hide optional fields';
+}
+
+function csvField(v) {
+  if (v === null || v === undefined) return '';
+  const s = String(v);
+  if (s.includes(',') || s.includes('"') || s.includes('\n') || s.includes('\r')) {
+    return '"' + s.replace(/"/g, '""') + '"';
+  }
+  return s;
+}
+
+function addTx() {
+  const dateISO = $('f_date').value;
+  const desc    = $('f_desc').value.trim();
+  const amount  = $('f_amount').value;
+
+  if (!dateISO) { toast('Please enter a date.', 'err'); return; }
+  if (!desc)    { toast('Description is required.', 'err'); return; }
+  if (!amount || isNaN(parseFloat(amount))) { toast('Enter a valid amount.', 'err'); return; }
+
+  const tx = {
+    // core
+    date:        toDisplayDate(dateISO),
+    description: desc,
+    txType:      $('f_type').value,
+    amount:      parseFloat(amount),
+    currency:    $('f_cur').value,
+    // from settings
+    accountNumber: val('s_acctNum'),
+    accountName:   val('s_acctName'),
+    // doc
+    additionalInfo: val('f_addInfo'),
+    docDate:    toDisplayDate($('f_docDate').value),
+    docNumber:  val('f_docNum'),
+    // partner
+    partnerAccount: val('f_pAcct'),
+    partnerName:    val('f_pName'),
+    partnerTax:     val('f_pTax'),
+    partnerBankCode:val('f_pBankCode'),
+    partnerBank:    val('f_pBank'),
+    // optional
+    intBankCode:  val('f_intCode'),
+    intBank:      val('f_intBank'),
+    chargeDetails:val('f_charge'),
+    taxpayerCode: val('f_tpCode'),
+    taxpayerName: val('f_tpName'),
+    treasuryCode: val('f_treasury'),
+    opCode:       val('f_opCode'),
+    // ids
+    addDesc: val('f_addDesc'),
+    txId:    val('f_txId'),
+  };
+
+  txs.push(tx);
+  autoId++;
+  renderTable();
+  advanceForm(tx);
+  toast(`Row ${txs.length} added ✓`, 'ok');
+}
+
+function advanceForm(lastTx) {
+  $('f_txId').value = autoId;
+  $('f_desc').value = '';
+  $('f_amount').value = '';
+  $('f_addDesc').value = '';
+  $('f_pName').value = '';
+  $('f_pAcct').value = '';
+  $('f_pTax').value = '';
+  // auto-increment doc number if numeric
+  if (lastTx.docNumber && /^\d+$/.test(lastTx.docNumber)) {
+    $('f_docNum').value = String(parseInt(lastTx.docNumber) + 1);
+  }
+}
+
+function deleteTx(i) {
+  txs.splice(i, 1);
+  renderTable();
+  toast('Row removed.', 'err');
+}
+
+function esc(s) {
+  if (!s) return '';
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function trunc(s, n = 22) {
+  if (!s) return '—';
+  return s.length > n ? s.slice(0, n-1) + '…' : s;
+}
+
+function renderTable() {
+  const body  = $('txBody');
+  const badge = $('exportBadge');
+  const label = $('txCountLabel');
+  const stats = $('statsBar');
+
+  badge.textContent = txs.length;
+  label.textContent = `(${txs.length} row${txs.length !== 1 ? 's' : ''})`;
+
+  if (!txs.length) {
+    body.innerHTML = `<tr><td colspan="13"><div class="empty"><div class="empty-icon">📭</div><div class="empty-txt">No transactions yet. Fill in the form above to get started.</div></div></td></tr>`;
+    stats.style.display = 'none';
+    return;
+  }
+
+  let totalIn = 0, totalOut = 0;
+  body.innerHTML = txs.map((tx, i) => {
+    const isIn = tx.txType === 'Income';
+    if (isIn) totalIn += tx.amount; else totalOut += tx.amount;
+    const amtStr = tx.amount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    return `
+    <tr>
+      <td class="idx">${i + 1}</td>
+      <td class="mono">${esc(tx.date)}</td>
+      <td class="trunc" title="${esc(tx.description)}">${esc(trunc(tx.description))}</td>
+      <td><span class="type-pill ${isIn ? 'income-pill' : 'expense-pill'}">${isIn ? '↑' : '↓'} ${tx.txType}</span></td>
+      <td class="amt ${isIn ? 'amt-in' : 'amt-out'}">${isIn ? '+' : '-'}${amtStr}</td>
+      <td class="mono">${esc(tx.currency)}</td>
+      <td class="mono">${esc(tx.docNumber) || '—'}</td>
+      <td class="trunc" title="${esc(tx.partnerName)}">${esc(trunc(tx.partnerName, 18)) || '—'}</td>
+      <td class="mono trunc" title="${esc(tx.partnerAccount)}">${esc(trunc(tx.partnerAccount, 16)) || '—'}</td>
+      <td class="trunc">${esc(trunc(tx.partnerBank, 16)) || '—'}</td>
+      <td class="trunc" title="${esc(tx.addDesc)}">${esc(trunc(tx.addDesc, 20)) || '—'}</td>
+      <td class="mono">${esc(tx.txId) || '—'}</td>
+      <td><button class="btn btn-sm btn-danger-ghost" onclick="deleteTx(${i})" title="Remove row">✕</button></td>
+    </tr>`;
+  }).join('');
+
+  const fmt = (n, cur) => {
+    const rows = txs.filter(t => t.txType === (n === totalIn ? 'Income' : 'Expense'));
+    const byCur = {};
+    rows.forEach(t => { byCur[t.currency] = (byCur[t.currency] || 0) + t.amount; });
+    return Object.entries(byCur).map(([c, v]) => `${v.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ${c}`).join(' + ') || '0';
+  };
+
+  $('statTotal').textContent = txs.length;
+  $('statIn').textContent = fmt(totalIn);
+  $('statOut').textContent = fmt(totalOut);
+  stats.style.display = 'flex';
+}
+
+function exportCSV() {
+  if (!txs.length) { toast('No rows to export.', 'err'); return; }
+
+  const rows = [
+    GEO_HDR,
+    ENG_HDR,
+    ...txs.map(tx => [
+      tx.date, tx.description, tx.txType, tx.amount, tx.currency,
+      tx.accountNumber, tx.accountName, tx.additionalInfo,
+      tx.docDate, tx.docNumber,
+      tx.partnerAccount, tx.partnerName, tx.partnerTax,
+      tx.partnerBankCode, tx.partnerBank,
+      tx.intBankCode, tx.intBank, tx.chargeDetails,
+      tx.taxpayerCode, tx.taxpayerName, tx.treasuryCode, tx.opCode,
+      tx.addDesc, tx.txId
+    ])
+  ];
+
+  const csv = rows.map(r => r.map(csvField).join(',')).join('\r\n');
+  const bom  = '\uFEFF'; // UTF-8 BOM — keeps Georgian readable in Excel
+  const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  const d = new Date();
+  const stamp = `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`;
+  a.download = `transactions_${stamp}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast(`Exported ${txs.length} row${txs.length !== 1 ? 's' : ''} as CSV.`, 'ok');
+}
+
+function pad(n) { return String(n).padStart(2, '0'); }
+
+function resetForm() {
+  ['f_date','f_docDate'].forEach(id => $(id).value = todayISO());
+  ['f_desc','f_amount','f_docNum','f_pAcct','f_pName','f_pTax',
+   'f_pBankCode','f_pBank','f_addDesc','f_addInfo','f_intCode',
+   'f_intBank','f_charge','f_tpCode','f_tpName','f_treasury','f_opCode'].forEach(id => $(id).value = '');
+  $('f_txId').value = autoId;
+  $('f_cur').value = $('s_cur').value;
+  $('f_type').value = $('s_type').value;
+}
+
+function clearAll() {
+  if (!txs.length) return;
+  if (!confirm(`Remove all ${txs.length} transaction(s)?`)) return;
+  txs = [];
+  autoId = 1;
+  $('f_txId').value = autoId;
+  renderTable();
+  toast('All rows cleared.', 'err');
+}
+
+function toast(msg, type = 'ok') {
+  const c  = $('toasts');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  c.appendChild(el);
+  setTimeout(() => {
+    el.style.animation = 'tout .18s ease forwards';
+    setTimeout(() => el.remove(), 200);
+  }, 2600);
+}
+
+// Enter key on amount → add transaction
+$('f_amount').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addTx();
+});
+</script>
+</body>
+</html>
