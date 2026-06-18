@@ -32,8 +32,14 @@
 <section class="panel">
   <h2>Profile</h2>
   <dl class="detail-list">
-    <dt>Phone</dt><dd>{{ summary.user.phone_number }}</dd>
     <dt>ID number</dt><dd>{{ summary.user.id_number }}</dd>
+    <dt>Phone numbers</dt><dd>
+      {% if summary.user.phones %}
+        {% for phone in summary.user.phones %}
+          {{ phone.phone_number }}{% if phone.label %} ({{ phone.label }}){% endif %}{% if not loop.last %}, {% endif %}
+        {% endfor %}
+      {% else %}—{% endif %}
+    </dt>
     <dt>Email</dt><dd>{{ summary.user.email or '—' }}</dd>
     <dt>Status</dt><dd>{{ badge(summary.user.status) }}</dd>
   </dl>

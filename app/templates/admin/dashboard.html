@@ -93,7 +93,7 @@
       <tbody>
         {% for sub in recent_subscriptions %}
         <tr>
-          <td>{{ sub.user.phone_number if sub.user else sub.user_id }}</td>
+          <td>{{ sub.user.id_number if sub.user else sub.user_id }}</td>
           <td>{{ sub.door_number }}</td>
           <td>{{ money(sub.monthly_fee) }}</td>
           <td>{{ badge(sub.status) }}</td>
@@ -127,7 +127,7 @@
         {% for chip in recent_chips %}
         <tr>
           <td><strong>{{ chip.chip_number }}</strong></td>
-          <td>{{ chip.user.phone_number if chip.user else chip.user_id }}</td>
+          <td>{{ chip.user.id_number if chip.user else chip.user_id }}</td>
           <td>{{ badge(chip.status) }}</td>
         </tr>
         {% endfor %}

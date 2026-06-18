@@ -14,10 +14,10 @@ def login():
     return redirect(url_for("main.index"))
 
   if request.method == "POST":
-    phone = request.form.get("phone_number", "").strip()
+    id_number = request.form.get("id_number", "").strip()
     password = request.form.get("password", "")
     try:
-      user = AuthService.authenticate(phone, password)
+      user = AuthService.authenticate(id_number, password)
       session.clear()
       session["user_id"] = user.id
       session.permanent = True

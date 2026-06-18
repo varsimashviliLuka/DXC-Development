@@ -19,7 +19,7 @@ def user_with_subscription(app, client, admin_headers, registered_user):
   ).get_json()
 
   users = client.get("/api/v1/users", headers=admin_headers).get_json()["items"]
-  user_id = next(u["id"] for u in users if u["phone_number"] == registered_user["phone_number"])
+  user_id = next(u["id"] for u in users if u["id_number"] == registered_user["id_number"])
 
   sub = client.post(
     "/api/v1/subscriptions",
@@ -70,7 +70,7 @@ def test_process_due_payment_marks_overdue_when_insufficient(app, user_with_subs
 
 def test_payment_increases_balance(app, registered_user, admin_headers, client):
   with app.app_context():
-    user = User.query.filter_by(phone_number=registered_user["phone_number"]).first()
+    user = User.query.filter_by(id_number=registered_user["id_number"]).first()
     TransactionService.record_payment(user=user, amount=Decimal("75.00"), reference="TEST-REF")
     db.session.refresh(user)
     assert float(user.balance) == 75.0

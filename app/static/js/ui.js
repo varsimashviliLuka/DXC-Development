@@ -191,6 +191,221 @@ function initTransactionDialogs() {
   });
 }
 
+function initPhoneLists() {
+  document.querySelectorAll("[data-phone-list]").forEach((root) => {
+    const rows = root.querySelector(".phone-rows");
+    const addBtn = root.querySelector("[data-phone-add]");
+    const listError = root.querySelector(".phone-list-error");
+    const checkUrl = root.dataset.checkUrl;
+    const excludeUserId = root.dataset.excludeUserId || "";
+    if (!rows || !addBtn) return;
+
+    const showListError = (message) => {
+      if (!listError) return;
+      if (message) {
+        listError.textContent = message;
+        listError.hidden = false;
+      } else {
+        listError.textContent = "";
+        listError.hidden = true;
+      }
+    };
+
+    const setRowError = (row, message) => {
+      const input = row.querySelector(".phone-number-input");
+      const errorEl = row.querySelector(".phone-field-error");
+      if (!input || !errorEl) return;
+      if (message) {
+        input.classList.add("phone-input-invalid");
+        errorEl.textContent = message;
+        errorEl.hidden = false;
+      } else {
+        input.classList.remove("phone-input-invalid");
+        errorEl.textContent = "";
+        errorEl.hidden = true;
+      }
+    };
+
+    const getFilledRows = () =>
+      [...rows.querySelectorAll(".phone-row")].filter((row) => {
+        const value = row.querySelector(".phone-number-input")?.value.trim();
+        return Boolean(value);
+      });
+
+    const getPhoneKey = (row) => {
+      const input = row.querySelector(".phone-number-input");
+      return (input?.dataset.normalizedPhone || input?.value.trim() || "").toLowerCase();
+    };
+
+    const findDuplicateInForm = (key, currentRow) => {
+      if (!key) return false;
+      return getFilledRows().some((row) => row !== currentRow && getPhoneKey(row) === key.toLowerCase());
+    };
+
+    const checkPhoneRemote = async (phone) => {
+      const params = new URLSearchParams({ phone });
+      if (excludeUserId) params.set("exclude_user_id", excludeUserId);
+      const res = await fetch(`${checkUrl}?${params.toString()}`);
+      if (!res.ok) return { ok: false, message: "Could not verify phone number" };
+      return res.json();
+    };
+
+    const validateRow = async (row, { quietEmpty = true } = {}) => {
+      const input = row.querySelector(".phone-number-input");
+      if (!input) return true;
+      const value = input.value.trim();
+      if (!value) {
+        if (!quietEmpty) {
+          setRowError(row, "Enter a phone number");
+          return false;
+        }
+        setRowError(row, "");
+        return true;
+      }
+
+      if (findDuplicateInForm(value, row)) {
+        setRowError(row, "Duplicate phone in this form");
+        return false;
+      }
+
+      try {
+        const result = await checkPhoneRemote(value);
+        if (!result.ok) {
+          input.dataset.normalizedPhone = "";
+          setRowError(row, result.message || "Phone number is not available");
+          return false;
+        }
+        if (result.phone) {
+          input.value = result.phone;
+          input.dataset.normalizedPhone = result.phone;
+        }
+        const key = getPhoneKey(row);
+        if (findDuplicateInForm(key, row)) {
+          setRowError(row, "Duplicate phone in this form");
+          return false;
+        }
+        setRowError(row, "");
+        return true;
+      } catch (_) {
+        setRowError(row, "Could not verify phone number");
+        return false;
+      }
+    };
+
+    const reindexPrimary = () => {
+      const rowList = [...rows.querySelectorAll(".phone-row")];
+      rowList.forEach((row, index) => {
+        const radio = row.querySelector('input[name="phone_primary"]');
+        const label = row.querySelector(".phone-primary-label");
+        const radioId = `phone_primary_${index}_${Math.random().toString(36).slice(2, 7)}`;
+        if (radio) {
+          radio.value = String(index);
+          radio.id = radioId;
+        }
+        if (label && radio) label.setAttribute("for", radioId);
+      });
+      const radios = rows.querySelectorAll('input[name="phone_primary"]');
+      if (radios.length && !rows.querySelector('input[name="phone_primary"]:checked')) {
+        radios[0].checked = true;
+      }
+    };
+
+    const bindRow = (row) => {
+      const input = row.querySelector(".phone-number-input");
+      const removeBtn = row.querySelector(".phone-remove");
+
+      input?.addEventListener("blur", () => {
+        validateRow(row).then((ok) => {
+          if (ok) showListError("");
+        });
+      });
+
+      input?.addEventListener("input", () => {
+        input.dataset.normalizedPhone = "";
+        setRowError(row, "");
+        showListError("");
+      });
+
+      removeBtn?.addEventListener("click", () => {
+        if (rows.children.length <= 1) {
+          input.value = "";
+          row.querySelector('input[name="phone_label"]').value = "";
+          setRowError(row, "");
+          showListError("");
+          return;
+        }
+        row.remove();
+        reindexPrimary();
+        showListError("");
+      });
+    };
+
+    const createRowHtml = (index) => {
+      const radioId = `phone_primary_new_${index}_${Date.now()}`;
+      return `
+        <div class="phone-row">
+          <div class="phone-field-wrap">
+            <input type="text" class="phone-number-input" name="phone_number" placeholder="+995592159199" value="" autocomplete="off">
+            <p class="phone-field-error" role="alert" hidden></p>
+          </div>
+          <div class="phone-field-wrap">
+            <input type="text" name="phone_label" placeholder="Label (Personal, Family…)" value="">
+          </div>
+          <div class="phone-primary-control">
+            <input type="radio" name="phone_primary" id="${radioId}" value="${index}">
+            <label class="phone-primary-label" for="${radioId}">Primary</label>
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm phone-remove" aria-label="Remove phone">&times;</button>
+        </div>
+      `;
+    };
+
+    rows.querySelectorAll(".phone-row").forEach(bindRow);
+    reindexPrimary();
+
+    addBtn.addEventListener("click", async () => {
+      showListError("");
+      const filled = getFilledRows();
+      if (!filled.length) {
+        showListError("Enter a phone number before adding another.");
+        return;
+      }
+      let ok = true;
+      for (const row of filled) {
+        const rowOk = await validateRow(row, { quietEmpty: false });
+        ok = ok && rowOk;
+      }
+      if (!ok) {
+        showListError("Fix phone number issues before adding another.");
+        return;
+      }
+
+      const index = rows.children.length;
+      const wrapper = document.createElement("div");
+      wrapper.innerHTML = createRowHtml(index).trim();
+      const row = wrapper.firstElementChild;
+      rows.appendChild(row);
+      bindRow(row);
+      reindexPrimary();
+      row.querySelector(".phone-number-input")?.focus();
+    });
+
+    const form = root.closest("form");
+    form?.addEventListener("submit", async (event) => {
+      const filled = getFilledRows();
+      if (!filled.length) return;
+      for (const row of filled) {
+        const rowOk = await validateRow(row, { quietEmpty: false });
+        if (!rowOk) {
+          event.preventDefault();
+          showListError("Please fix phone number errors before saving.");
+          return;
+        }
+      }
+    });
+  });
+}
+
 function escapeHtml(str) {
   return String(str)
     .replace(/&/g, "&amp;")
@@ -204,4 +419,5 @@ document.addEventListener("DOMContentLoaded", () => {
   initMobileNav();
   initComboboxes();
   initTransactionDialogs();
+  initPhoneLists();
 });

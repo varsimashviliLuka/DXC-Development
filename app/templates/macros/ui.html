@@ -42,3 +42,67 @@
 {% macro money(amount, class='') %}
 <span class="money {{ class }}">{{ '%.2f'|format(amount|float) }} ₾</span>
 {% endmacro %}
+
+{% macro user_phones_cell(user) %}
+{% set phones = user.phones.all() %}
+{% if phones %}
+  {% for phone in phones %}
+    <span class="phone-chip{% if phone.is_primary %} phone-chip-primary{% endif %}">
+      {{ phone.phone_number }}{% if phone.label %} <span class="muted">· {{ phone.label }}</span>{% endif %}
+    </span>{% if not loop.last %} {% endif %}
+  {% endfor %}
+{% else %}
+  <span class="muted">—</span>
+{% endif %}
+{% endmacro %}
+
+{% macro phone_fields(phones=None, exclude_user_id=None) %}
+<div class="form-group form-group-full phone-list"
+     data-phone-list
+     data-check-url="{{ url_for('admin_api.check_phone') }}"
+     {% if exclude_user_id is not none %}data-exclude-user-id="{{ exclude_user_id }}"{% endif %}>
+  <span class="form-label">Phone numbers</span>
+  <p class="muted form-hint">Add personal and family numbers. Numbers are checked when you add another row or leave the field.</p>
+  <div class="phone-rows">
+    {% set phone_items = phones if phones else [] %}
+    {% if not phone_items %}
+      {% set phone_items = [{'phone_number': '', 'label': 'Personal', 'is_primary': True}] %}
+    {% endif %}
+    {% for phone in phone_items %}
+    <div class="phone-row">
+      <div class="phone-field-wrap">
+        <input type="text" class="phone-number-input" name="phone_number" placeholder="+995592159199" value="{{ phone.phone_number or '' }}" autocomplete="off">
+        <p class="phone-field-error" role="alert" hidden></p>
+      </div>
+      <div class="phone-field-wrap">
+        <input type="text" name="phone_label" placeholder="Label (Personal, Family…)" value="{{ phone.label or '' }}">
+      </div>
+      <div class="phone-primary-control">
+        <input type="radio" name="phone_primary" id="phone_primary_{{ loop.index0 }}" value="{{ loop.index0 }}" {% if phone.is_primary %}checked{% endif %}>
+        <label class="phone-primary-label" for="phone_primary_{{ loop.index0 }}">Primary</label>
+      </div>
+      <button type="button" class="btn btn-ghost btn-sm phone-remove" aria-label="Remove phone">&times;</button>
+    </div>
+    {% endfor %}
+  </div>
+  <p class="phone-list-error" role="alert" hidden></p>
+  <button type="button" class="btn btn-secondary btn-sm" data-phone-add>Add phone</button>
+</div>
+{% endmacro %}
+
+{% macro edit_panel_footer(form_id, cancel_url, delete_url=None, delete_label="Delete", delete_confirm="Are you sure?") %}
+<footer class="panel-footer">
+  <div class="panel-footer-main">
+    <a href="{{ cancel_url }}" class="btn btn-ghost">Cancel</a>
+    <button type="submit" class="btn btn-primary" form="{{ form_id }}">Save changes</button>
+  </div>
+  {% if delete_url %}
+  <div class="panel-footer-danger">
+    <form method="post" action="{{ delete_url }}" class="inline-form"
+          onsubmit="return confirm('{{ delete_confirm }}');">
+      <button type="submit" class="btn btn-danger">{{ delete_label }}</button>
+    </form>
+  </div>
+  {% endif %}
+</footer>
+{% endmacro %}

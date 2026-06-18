@@ -392,9 +392,11 @@ class BankImportService:
       raise ValueError("Bank record has no partner tax code for ID number")
 
     user = AuthService.register_user(
-      phone_number=phone_number,
       id_number=id_number,
       password=password,
+      phones=[{"phone_number": phone_number, "label": "Personal", "is_primary": True}]
+      if phone_number
+      else None,
       email=email,
       first_name=bank_import.partner_first_name,
       last_name=bank_import.partner_last_name,

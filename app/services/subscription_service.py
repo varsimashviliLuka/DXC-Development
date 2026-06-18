@@ -8,7 +8,7 @@ from dateutil.relativedelta import relativedelta
 
 from app.enums import SubscriptionStatus, TransactionStatus, TransactionType
 from app.extensions import db
-from app.models import Building, Subscription, Transaction, User
+from app.models import Building, Subscription, Transaction, User, UserPhone
 from app.services.building_service import BuildingService
 from app.services.user_service import UserService
 from app.utils.errors import ConflictError, NotFoundError
@@ -82,19 +82,19 @@ class SubscriptionService:
 
   @staticmethod
   def _subscriptions_query(search: str | None = None):
-    query = Subscription.query.join(User).join(Building)
+    query = Subscription.query.join(User).outerjoin(UserPhone).join(Building)
     q = (search or "").strip()
     if q:
       pattern = f"%{q}%"
       query = query.filter(
         db.or_(
           Subscription.door_number.ilike(pattern),
-          User.phone_number.ilike(pattern),
           User.id_number.ilike(pattern),
+          UserPhone.phone_number.ilike(pattern),
           Building.building_number.ilike(pattern),
           Building.name.ilike(pattern),
         )
-      )
+      ).distinct()
     return query.order_by(Subscription.id)
 
   @staticmethod

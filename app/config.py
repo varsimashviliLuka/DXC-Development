@@ -34,7 +34,7 @@ class Config:
 
   ADMIN_PHONE = os.getenv("ADMIN_PHONE", "+995591000001")
   ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "ChangeMeAdmin123!")
-  ADMIN_ID_NUMBER = os.getenv("ADMIN_ID_NUMBER", "ADMIN0001")
+  ADMIN_ID_NUMBER = os.getenv("ADMIN_ID_NUMBER", "01011000001")
 
   DEFAULT_PHONE_REGION = os.getenv("DEFAULT_PHONE_REGION", "GE")
 
@@ -68,7 +68,7 @@ class TestingConfig(Config):
   RATELIMIT_ENABLED = False
   ADMIN_PHONE = "+995591000001"
   ADMIN_PASSWORD = "TestAdmin123!"
-  ADMIN_ID_NUMBER = "ADMIN0001"
+  ADMIN_ID_NUMBER = "01011000001"
 
 
 config_by_name = {

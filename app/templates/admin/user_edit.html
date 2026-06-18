@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros/ui.html" import page_header %}
+{% from "macros/ui.html" import page_header, phone_fields, edit_panel_footer %}
 
 {% block title %}Edit User — Admin{% endblock %}
 
@@ -7,15 +7,11 @@
 {{ page_header("Edit user", "Update resident account details.") }}
 
 <section class="panel">
-  <form method="post" class="form form-grid">
-    <div class="form-group">
-      <label for="phone_number">Phone</label>
-      <input type="text" id="phone_number" name="phone_number" required
-             value="{{ form.get('phone_number', user.phone_number) }}">
-    </div>
+  <form method="post" id="edit-user-form" class="form form-grid">
     <div class="form-group">
       <label for="id_number">ID number</label>
       <input type="text" id="id_number" name="id_number" required
+             inputmode="numeric" pattern="\d{11}" maxlength="11" minlength="11"
              value="{{ form.get('id_number', user.id_number) }}">
     </div>
     <div class="form-group">
@@ -26,7 +22,7 @@
     <div class="form-group">
       <label for="password">New password</label>
       <input type="password" id="password" name="password"
-             placeholder="Leave blank to keep current password">
+             placeholder="Leave blank to keep current password" autocomplete="new-password">
     </div>
     <div class="form-group">
       <label for="first_name">First name</label>
@@ -54,19 +50,20 @@
         {% endfor %}
       </select>
     </div>
+    {{ phone_fields(user.phones.all(), exclude_user_id=user.id) }}
     <div class="form-group form-group-full">
       <label for="admin_comment">Admin comment</label>
       <textarea id="admin_comment" name="admin_comment" rows="4"
                 placeholder="Internal notes visible only to admins">{{ form.get('admin_comment', user.admin_comment or '') }}</textarea>
     </div>
-    <div class="form-actions">
-      <a href="{{ url_for('admin.users') }}" class="btn btn-ghost">Cancel</a>
-      <button type="submit" class="btn btn-primary">Save changes</button>
-    </div>
   </form>
-  <form method="post" action="{{ url_for('admin.delete_user', user_id=user.id) }}" class="form form-actions"
-        onsubmit="return confirm('Delete this user permanently? Subscriptions, chips, and transactions will be removed.');">
-    <button type="submit" class="btn btn-danger">Delete user</button>
-  </form>
+
+  {{ edit_panel_footer(
+    "edit-user-form",
+    url_for('admin.users'),
+    url_for('admin.delete_user', user_id=user.id),
+    "Delete user",
+    "Delete this user permanently? Subscriptions, chips, and transactions will be removed."
+  ) }}
 </section>
 {% endblock %}

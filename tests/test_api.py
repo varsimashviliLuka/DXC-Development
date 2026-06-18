@@ -16,7 +16,7 @@ def test_missing_auth_returns_401(client):
 def test_admin_login(client):
   response = client.post(
     "/api/v1/auth/login",
-    json={"phone_number": "+995591000001", "password": "TestAdmin123!"},
+    json={"id_number": "01011000001", "password": "TestAdmin123!"},
   )
   assert response.status_code == 200
   data = response.get_json()
@@ -28,8 +28,7 @@ def test_user_cannot_register_users(client, user_headers):
   response = client.post(
     "/api/v1/users",
     json={
-      "phone_number": "+995555123456",
-      "id_number": "NEWUSER1",
+      "id_number": "01055512345",
       "password": "AnotherPass123",
     },
     headers=user_headers,
@@ -42,7 +41,7 @@ def test_admin_registers_user(client, admin_headers, registered_user):
   assert response.status_code == 200
   data = response.get_json()
   assert data["total"] >= 1
-  assert any(item["phone_number"] == registered_user["phone_number"] for item in data["items"])
+  assert any(item["id_number"] == registered_user["id_number"] for item in data["items"])
 
 
 def test_user_dashboard(client, user_headers, registered_user):
@@ -52,7 +51,8 @@ def test_user_dashboard(client, user_headers, registered_user):
   assert "user" in data
   assert "summary" in data
   assert "chips" in data
-  assert data["user"]["phone_number"] == registered_user["phone_number"]
+  assert data["user"]["phone_number"] == registered_user["phones"][0]["phone_number"]
+  assert data["user"]["id_number"] == registered_user["id_number"]
   assert data["user"]["email"] == registered_user["email"]
 
 
@@ -67,7 +67,7 @@ def test_password_change(client, user_headers, registered_user):
   old_login = client.post(
     "/api/v1/auth/login",
     json={
-      "phone_number": registered_user["phone_number"],
+      "id_number": registered_user["id_number"],
       "password": "UserPass123",
     },
   )
@@ -76,7 +76,7 @@ def test_password_change(client, user_headers, registered_user):
   new_login = client.post(
     "/api/v1/auth/login",
     json={
-      "phone_number": registered_user["phone_number"],
+      "id_number": registered_user["id_number"],
       "password": "NewUserPass456",
     },
   )
@@ -116,7 +116,7 @@ def test_building_subscription_and_chip_flow(client, admin_headers, registered_u
   user_id = next(
     u["id"]
     for u in users_response.get_json()["items"]
-    if u["phone_number"] == registered_user["phone_number"]
+    if u["id_number"] == registered_user["id_number"]
   )
 
   subscription_response = client.post(
@@ -145,7 +145,7 @@ def test_building_subscription_and_chip_flow(client, admin_headers, registered_u
   login_response = client.post(
     "/api/v1/auth/login",
     json={
-      "phone_number": registered_user["phone_number"],
+      "id_number": registered_user["id_number"],
       "password": registered_user["password"],
     },
   )
@@ -179,7 +179,7 @@ def test_csv_payment_import(client, admin_headers, registered_user):
   payment_reference = build_payment_reference(building_id, building["building_number"], "12A")
 
   users = client.get("/api/v1/users", headers=admin_headers).get_json()["items"]
-  user_id = next(u["id"] for u in users if u["phone_number"] == registered_user["phone_number"])
+  user_id = next(u["id"] for u in users if u["id_number"] == registered_user["id_number"])
 
   client.post(
     "/api/v1/subscriptions",
@@ -214,7 +214,7 @@ def test_csv_payment_import(client, admin_headers, registered_user):
   users_response = client.get("/api/v1/users", headers=admin_headers)
   user = next(
     u for u in users_response.get_json()["items"]
-    if u["phone_number"] == registered_user["phone_number"]
+    if u["id_number"] == registered_user["id_number"]
   )
   assert user["balance"] == 100.0
 
@@ -226,18 +226,18 @@ def test_bank_import_split_across_multiple_door_references(client, admin_headers
   user_one = client.post(
     "/api/v1/users",
     json={
-      "phone_number": "+995555111333",
       "id_number": "01010018013",
       "password": "UserPass123",
+      "phones": [{"phone_number": "+995555111333", "label": "Personal", "is_primary": True}],
     },
     headers=admin_headers,
   ).get_json()
   user_two = client.post(
     "/api/v1/users",
     json={
-      "phone_number": "+995555111444",
       "id_number": "01010018014",
       "password": "UserPass123",
+      "phones": [{"phone_number": "+995555111444", "label": "Personal", "is_primary": True}],
     },
     headers=admin_headers,
   ).get_json()
@@ -303,9 +303,9 @@ def test_bank_import_by_partner_tax_code(client, admin_headers):
   client.post(
     "/api/v1/users",
     json={
-      "phone_number": "+995555111222",
       "id_number": "01010018012",
       "password": "UserPass123",
+      "phones": [{"phone_number": "+995555111222", "label": "Personal", "is_primary": True}],
     },
     headers=admin_headers,
   )
@@ -350,7 +350,7 @@ def test_login_rate_limit_not_triggered_on_success(client):
   for _ in range(3):
     response = client.post(
       "/api/v1/auth/login",
-      json={"phone_number": "+995591000001", "password": "TestAdmin123!"},
+      json={"id_number": "01011000001", "password": "TestAdmin123!"},
     )
     assert response.status_code == 200
 

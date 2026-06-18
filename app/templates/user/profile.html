@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros/ui.html" import page_header, money, badge %}
+{% from "macros/ui.html" import page_header, money, badge, user_phones_cell %}
 
 {% block title %}Profile{% endblock %}
 
@@ -8,8 +8,8 @@
 
 <section class="panel">
   <dl class="detail-list">
-    <dt>Phone</dt><dd>{{ user.phone_number }}</dd>
-    <dt>ID number</dt><dd>{{ user.id_number }}</dd>
+    <dt>ID number</dt><dd><strong>{{ user.id_number }}</strong></dd>
+    <dt>Phone numbers</dt><dd>{{ user_phones_cell(user) }}</dd>
     <dt>Email</dt><dd>{{ user.email or '—' }}</dd>
     <dt>Name</dt><dd>{{ user.first_name or '' }} {{ user.last_name or '' }}</dd>
     <dt>Balance</dt><dd>{{ money(user.balance, 'text-success' if user.balance >= 0 else 'text-danger') }}</dd>

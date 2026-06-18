@@ -98,10 +98,15 @@ def create_app(config_name=None):
     from app import models  # noqa: F401
 
     db.create_all()
-    from app.utils.schema import ensure_admin_comment_columns, ensure_building_number_non_unique
+    from app.utils.schema import (
+      ensure_admin_comment_columns,
+      ensure_building_number_non_unique,
+      migrate_legacy_user_phones,
+    )
 
     ensure_admin_comment_columns()
     ensure_building_number_non_unique()
+    migrate_legacy_user_phones()
     AuthService.ensure_admin_user(app.config)
     logger.info("Database initialized")
 

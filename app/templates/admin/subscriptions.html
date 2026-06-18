@@ -14,7 +14,7 @@
       "user_id",
       "Resident",
       url_for("admin_api.search_users"),
-      "Search by phone, ID, or name...",
+      "Search by ID, phone, or name...",
       required=true,
       value=form.get('user_id', '')
     ) }}
@@ -82,7 +82,7 @@
       <tbody>
         {% for sub in subscriptions %}
         <tr>
-          <td>{{ sub.user.phone_number if sub.user else sub.user_id }}</td>
+          <td>{{ sub.user.id_number if sub.user else sub.user_id }}</td>
           <td>{{ sub.building.building_number if sub.building else sub.building_id }}{% if sub.building %} <span class="muted">(#{{ sub.building.id }})</span>{% endif %}</td>
           <td>{{ sub.door_number }}</td>
           <td><code>{{ sub.payment_reference or '—' }}</code></td>

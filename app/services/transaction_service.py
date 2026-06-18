@@ -9,7 +9,7 @@ from sqlalchemy.orm import joinedload
 
 from app.enums import TransactionStatus, TransactionType
 from app.extensions import db
-from app.models import Subscription, Transaction, User
+from app.models import Subscription, Transaction, User, UserPhone
 from app.services.bank_import_service import BankImportService
 from app.utils.errors import AppError
 
@@ -68,7 +68,12 @@ class TransactionService:
 
     if phone_number and phone_number.strip():
       pattern = f"%{phone_number.strip()}%"
-      query = query.join(User).filter(User.phone_number.ilike(pattern))
+      query = (
+        query.join(User)
+        .outerjoin(UserPhone)
+        .filter(UserPhone.phone_number.ilike(pattern))
+        .distinct()
+      )
 
     if id_number and id_number.strip():
       pattern = f"%{id_number.strip()}%"
@@ -92,15 +97,19 @@ class TransactionService:
 
     if free_text and free_text.strip():
       pattern = f"%{free_text.strip()}%"
-      query = query.filter(
-        db.or_(
-          Transaction.reference.ilike(pattern),
-          Transaction.description.ilike(pattern),
-          User.phone_number.ilike(pattern),
-          User.id_number.ilike(pattern),
-          # building is included in joinedload; matching is best-effort here
+      query = (
+        query.join(User)
+        .outerjoin(UserPhone)
+        .filter(
+          db.or_(
+            Transaction.reference.ilike(pattern),
+            Transaction.description.ilike(pattern),
+            User.id_number.ilike(pattern),
+            UserPhone.phone_number.ilike(pattern),
+          )
         )
-      ).join(User)
+        .distinct()
+      )
 
     # Pull more than `limit` so we can apply Python-only subscription reference filtering.
     fetch_limit = min(max(limit * 10, limit), 2000)

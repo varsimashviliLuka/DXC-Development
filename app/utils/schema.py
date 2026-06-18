@@ -53,3 +53,46 @@ def ensure_building_number_non_unique() -> None:
     db.session.rollback()
 
   db.session.commit()
+
+
+def migrate_legacy_user_phones() -> None:
+  """Copy users.phone_number into user_phones for databases created before multi-phone."""
+  inspector = inspect(db.engine)
+  if "users" not in inspector.get_table_names():
+    return
+  if "user_phones" not in inspector.get_table_names():
+    return
+
+  user_columns = {column["name"] for column in inspector.get_columns("users")}
+  if "phone_number" not in user_columns:
+    return
+
+  from app.models import UserPhone
+
+  rows = db.session.execute(
+    text(
+      "SELECT id, phone_number FROM users "
+      "WHERE phone_number IS NOT NULL AND TRIM(phone_number) != ''"
+    )
+  )
+  migrated = 0
+  for user_id, phone_number in rows:
+    phone = (phone_number or "").strip()
+    if not phone:
+      continue
+    if UserPhone.query.filter_by(phone_number=phone).first():
+      continue
+    if UserPhone.query.filter_by(user_id=user_id).first():
+      continue
+    db.session.add(
+      UserPhone(
+        user_id=user_id,
+        phone_number=phone,
+        label="Personal",
+        is_primary=True,
+      )
+    )
+    migrated += 1
+  if migrated:
+    db.session.commit()
+    logger.info("Migrated %s legacy phone numbers to user_phones", migrated)

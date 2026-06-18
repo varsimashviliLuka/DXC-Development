@@ -8,10 +8,10 @@ from app.enums import UserRole, UserStatus
 from app.extensions import db
 from app.models import User
 from app.security.password import hash_password, verify_password
+from app.services.phone_service import PhoneService
 from app.utils.errors import ConflictError, UnauthorizedError
 from app.utils.validators import (
   ValidationError,
-  normalize_phone,
   validate_email,
   validate_id_number,
   validate_password,
@@ -22,12 +22,12 @@ logger = logging.getLogger(__name__)
 
 class AuthService:
   @staticmethod
-  def authenticate(phone_number: str, password: str) -> User:
-    phone = normalize_phone(phone_number)
-    user = User.query.filter_by(phone_number=phone).first()
+  def authenticate(id_number: str, password: str) -> User:
+    id_num = validate_id_number(id_number)
+    user = User.query.filter_by(id_number=id_num).first()
     if not user or not verify_password(user.password_hash, password):
-      logger.warning("Failed login attempt for phone=%s", phone)
-      raise UnauthorizedError("Invalid phone number or password")
+      logger.warning("Failed login attempt for id_number=%s", id_num)
+      raise UnauthorizedError("Invalid ID number or password")
 
     if user.status == UserStatus.SUSPENDED:
       raise UnauthorizedError("Account is suspended")
@@ -35,8 +35,8 @@ class AuthService:
     return user
 
   @staticmethod
-  def login(phone_number: str, password: str) -> dict:
-    user = AuthService.authenticate(phone_number, password)
+  def login(id_number: str, password: str) -> dict:
+    user = AuthService.authenticate(id_number, password)
     token = create_access_token(
       identity=str(user.id),
       additional_claims={"role": user.role.value},
@@ -46,20 +46,25 @@ class AuthService:
 
   @staticmethod
   def ensure_admin_user(app_config) -> User:
-    phone = normalize_phone(app_config["ADMIN_PHONE"])
     id_number = validate_id_number(app_config["ADMIN_ID_NUMBER"])
     password = app_config["ADMIN_PASSWORD"]
+    admin_phone = app_config.get("ADMIN_PHONE")
 
-    user = User.query.filter_by(phone_number=phone).first()
+    user = User.query.filter_by(id_number=id_number).first()
     if user:
       if user.role != UserRole.ADMIN:
         user.role = UserRole.ADMIN
         db.session.commit()
         logger.info("Promoted existing user_id=%s to admin", user.id)
+      if admin_phone and not user.phones.filter_by(is_primary=True).first():
+        try:
+          PhoneService.add_phone(user, admin_phone, label="Admin", is_primary=True)
+          db.session.commit()
+        except ConflictError:
+          db.session.rollback()
       return user
 
     admin = User(
-      phone_number=phone,
       id_number=id_number,
       password_hash=hash_password(password),
       role=UserRole.ADMIN,
@@ -68,37 +73,36 @@ class AuthService:
       last_name="Admin",
     )
     db.session.add(admin)
+    db.session.flush()
+    if admin_phone:
+      PhoneService.add_phone(admin, admin_phone, label="Admin", is_primary=True)
     db.session.commit()
-    logger.info("Seeded default admin user phone=%s", phone)
+    logger.info("Seeded default admin user id_number=%s", id_number)
     return admin
 
   @staticmethod
   def register_user(
     *,
-    phone_number: str,
     id_number: str,
     password: str,
+    phones: list[dict] | None = None,
     first_name: str | None = None,
     last_name: str | None = None,
     email: str | None = None,
     status: UserStatus = UserStatus.ACTIVE,
     admin_comment: str | None = None,
   ) -> User:
-    phone = normalize_phone(phone_number)
     id_num = validate_id_number(id_number)
     pwd = validate_password(password)
     email_addr = validate_email(email)
 
-    if User.query.filter(
-      (User.phone_number == phone) | (User.id_number == id_num)
-    ).first():
-      raise ConflictError("Phone number or ID number already registered")
+    if User.query.filter_by(id_number=id_num).first():
+      raise ConflictError("ID number already registered")
 
     if email_addr and User.query.filter_by(email=email_addr).first():
       raise ConflictError("Email address already registered")
 
     user = User(
-      phone_number=phone,
       id_number=id_num,
       email=email_addr,
       password_hash=hash_password(pwd),
@@ -109,8 +113,13 @@ class AuthService:
       admin_comment=(admin_comment or "").strip() or None,
     )
     db.session.add(user)
+    db.session.flush()
+
+    if phones:
+      PhoneService.replace_phones(user, phones)
+
     db.session.commit()
-    logger.info("Registered user_id=%s phone=%s", user.id, phone)
+    logger.info("Registered user_id=%s id_number=%s", user.id, id_num)
     return user
 
   @staticmethod

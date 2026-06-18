@@ -18,7 +18,7 @@ def client(app):
 def admin_headers(client):
   response = client.post(
     "/api/v1/auth/login",
-    json={"phone_number": "+995591000001", "password": "TestAdmin123!"},
+    json={"id_number": "01011000001", "password": "TestAdmin123!"},
   )
   assert response.status_code == 200
   token = response.get_json()["access_token"]
@@ -28,9 +28,11 @@ def admin_headers(client):
 @pytest.fixture
 def registered_user(client, admin_headers):
   payload = {
-    "phone_number": "+995592159199",
-    "id_number": "USER1234",
+    "id_number": "01024096118",
     "password": "UserPass123",
+    "phones": [
+      {"phone_number": "+995592159199", "label": "Personal", "is_primary": True},
+    ],
     "first_name": "Jane",
     "last_name": "Doe",
     "email": "jane.doe@example.com",
@@ -45,7 +47,7 @@ def user_headers(client, registered_user):
   response = client.post(
     "/api/v1/auth/login",
     json={
-      "phone_number": registered_user["phone_number"],
+      "id_number": registered_user["id_number"],
       "password": registered_user["password"],
     },
   )

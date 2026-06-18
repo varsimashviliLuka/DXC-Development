@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "macros/pagination.html" import render_pagination %}
-{% from "macros/ui.html" import page_header, search_bar, badge, money %}
+{% from "macros/ui.html" import page_header, search_bar, badge, money, phone_fields, user_phones_cell %}
 
 {% block title %}Users — Admin{% endblock %}
 
@@ -11,14 +11,10 @@
   <h2>Register new user</h2>
   <form method="post" class="form form-grid">
     <div class="form-group">
-      <label for="phone_number">Phone</label>
-      <input type="text" id="phone_number" name="phone_number" required
-             placeholder="+995592159199"
-             value="{{ form.get('phone_number', '') }}">
-    </div>
-    <div class="form-group">
       <label for="id_number">ID number</label>
       <input type="text" id="id_number" name="id_number" required
+             inputmode="numeric" pattern="\d{11}" maxlength="11" minlength="11"
+             placeholder="01124096118"
              value="{{ form.get('id_number', '') }}">
     </div>
     <div class="form-group">
@@ -45,6 +41,7 @@
         {% endfor %}
       </select>
     </div>
+    {{ phone_fields() }}
     <div class="form-group form-group-full">
       <label for="admin_comment">Admin comment</label>
       <textarea id="admin_comment" name="admin_comment" rows="3"
@@ -59,14 +56,14 @@
 <section class="panel">
   <div class="panel-header">
     <h2>All users</h2>
-    {{ search_bar(url_for('admin.users'), "Search phone, ID, name, email...", search_q) }}
+    {{ search_bar(url_for('admin.users'), "Search ID, phone, name, email...", search_q) }}
   </div>
   <div class="table-wrap">
     <table class="data-table">
       <thead>
         <tr>
-          <th>Phone</th>
           <th>ID number</th>
+          <th>Phones</th>
           <th>Name</th>
           <th>Balance</th>
           <th>Status</th>
@@ -76,8 +73,8 @@
       <tbody>
         {% for user in users %}
         <tr>
-          <td>{{ user.phone_number }}</td>
-          <td>{{ user.id_number }}</td>
+          <td><strong>{{ user.id_number }}</strong></td>
+          <td>{{ user_phones_cell(user) }}</td>
           <td>{{ user.first_name or '' }} {{ user.last_name or '' }}</td>
           <td>{{ money(user.balance, 'text-success' if user.balance >= 0 else 'text-danger') }}</td>
           <td>{{ badge(user.status) }}</td>

@@ -33,8 +33,7 @@ class User(TimestampMixin, db.Model):
   __tablename__ = "users"
 
   id = db.Column(db.Integer, primary_key=True)
-  phone_number = db.Column(db.String(20), unique=True, nullable=False, index=True)
-  id_number = db.Column(db.String(50), unique=True, nullable=False, index=True)
+  id_number = db.Column(db.String(11), unique=True, nullable=False, index=True)
   email = db.Column(db.String(255), unique=True, nullable=True, index=True)
   password_hash = db.Column(db.String(255), nullable=False)
   role = db.Column(db.Enum(UserRole), nullable=False, default=UserRole.USER)
@@ -44,6 +43,13 @@ class User(TimestampMixin, db.Model):
   last_name = db.Column(db.String(100))
   admin_comment = db.Column(db.Text, nullable=True)
 
+  phones = db.relationship(
+    "UserPhone",
+    back_populates="user",
+    lazy="dynamic",
+    cascade="all, delete-orphan",
+    order_by="UserPhone.is_primary.desc(), UserPhone.id",
+  )
   subscriptions = db.relationship(
     "Subscription",
     back_populates="user",
@@ -66,11 +72,26 @@ class User(TimestampMixin, db.Model):
   def is_admin(self):
     return self.role == UserRole.ADMIN
 
+  @property
+  def primary_phone(self) -> str | None:
+    primary = self.phones.filter_by(is_primary=True).first()
+    if primary:
+      return primary.phone_number
+    first = self.phones.first()
+    return first.phone_number if first else None
+
+  @property
+  def display_name(self) -> str:
+    name = " ".join(filter(None, [self.first_name, self.last_name])).strip()
+    return name or self.id_number
+
   def to_dict(self, include_sensitive=False, include_admin=False):
+    phone_list = [p.to_dict() for p in self.phones.all()]
     data = {
       "id": self.id,
-      "phone_number": self.phone_number,
       "id_number": self.id_number,
+      "primary_phone": self.primary_phone,
+      "phones": phone_list,
       "email": self.email,
       "role": self.role.value,
       "status": self.status.value,
@@ -80,9 +101,34 @@ class User(TimestampMixin, db.Model):
       "created_at": self.created_at.isoformat() if self.created_at else None,
       "updated_at": self.updated_at.isoformat() if self.updated_at else None,
     }
+    # Backward compatibility for clients expecting phone_number
+    data["phone_number"] = self.primary_phone
     if include_admin:
       data["admin_comment"] = self.admin_comment
     return data
+
+
+class UserPhone(TimestampMixin, db.Model):
+  """Phone numbers linked to a user (personal, family, etc.)."""
+
+  __tablename__ = "user_phones"
+
+  id = db.Column(db.Integer, primary_key=True)
+  user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+  phone_number = db.Column(db.String(20), unique=True, nullable=False, index=True)
+  label = db.Column(db.String(100), nullable=True)
+  is_primary = db.Column(db.Boolean, nullable=False, default=False)
+
+  user = db.relationship("User", back_populates="phones")
+
+  def to_dict(self):
+    return {
+      "id": self.id,
+      "phone_number": self.phone_number,
+      "label": self.label,
+      "is_primary": self.is_primary,
+      "created_at": self.created_at.isoformat() if self.created_at else None,
+    }
 
 
 class Building(TimestampMixin, db.Model):

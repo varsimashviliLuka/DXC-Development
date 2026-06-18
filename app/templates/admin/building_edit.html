@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros/ui.html" import page_header %}
+{% from "macros/ui.html" import page_header, edit_panel_footer %}
 
 {% block title %}Edit Building — Admin{% endblock %}
 
@@ -7,7 +7,7 @@
 {{ page_header("Edit building", "Update building registry details.") }}
 
 <section class="panel">
-  <form method="post" class="form form-grid">
+  <form method="post" id="edit-building-form" class="form form-grid">
     <div class="form-group">
       <label for="building_number">Building number</label>
       <input type="text" id="building_number" name="building_number" required
@@ -28,14 +28,14 @@
       <textarea id="admin_comment" name="admin_comment" rows="4"
                 placeholder="Internal notes visible only to admins">{{ form.get('admin_comment', building.admin_comment or '') }}</textarea>
     </div>
-    <div class="form-actions">
-      <a href="{{ url_for('admin.buildings') }}" class="btn btn-ghost">Cancel</a>
-      <button type="submit" class="btn btn-primary">Save changes</button>
-    </div>
   </form>
-  <form method="post" action="{{ url_for('admin.delete_building', building_id=building.id) }}" class="form form-actions"
-        onsubmit="return confirm('Delete this building and all of its subscriptions?');">
-    <button type="submit" class="btn btn-danger">Delete building</button>
-  </form>
+
+  {{ edit_panel_footer(
+    "edit-building-form",
+    url_for('admin.buildings'),
+    url_for('admin.delete_building', building_id=building.id),
+    "Delete building",
+    "Delete this building and all of its subscriptions?"
+  ) }}
 </section>
 {% endblock %}

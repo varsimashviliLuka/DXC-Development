@@ -7,7 +7,7 @@ from phonenumbers import NumberParseException
 
 
 PHONE_PATTERN = re.compile(r"^\+?[1-9]\d{6,14}$")
-ID_NUMBER_PATTERN = re.compile(r"^[A-Za-z0-9\-]{4,50}$")
+ID_NUMBER_PATTERN = re.compile(r"^\d{11}$")
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 PASSWORD_MIN_LENGTH = 8
 DEFAULT_PHONE_REGION = "GE"
@@ -50,10 +50,8 @@ def validate_email(email: str | None) -> str | None:
 def validate_id_number(id_number: str) -> str:
   id_number = (id_number or "").strip()
   if not ID_NUMBER_PATTERN.match(id_number):
-    raise ValidationError(
-      "ID number must be 4-50 alphanumeric characters (hyphens allowed)"
-    )
-  return id_number.upper()
+    raise ValidationError("ID number must be exactly 11 digits (e.g. 01124096118)")
+  return id_number
 
 
 def validate_password(password: str) -> str:

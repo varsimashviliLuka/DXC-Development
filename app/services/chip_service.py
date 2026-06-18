@@ -4,7 +4,7 @@ import logging
 
 from app.enums import ChipStatus
 from app.extensions import db
-from app.models import Chip, User, utcnow
+from app.models import Chip, User, UserPhone, utcnow
 from app.services.user_service import UserService
 from app.utils.errors import ConflictError, NotFoundError
 from app.utils.validators import validate_chip_number
@@ -44,17 +44,17 @@ class ChipService:
 
   @staticmethod
   def _chips_query(search: str | None = None):
-    query = Chip.query.join(User)
+    query = Chip.query.join(User).outerjoin(UserPhone)
     q = (search or "").strip()
     if q:
       pattern = f"%{q}%"
       query = query.filter(
         db.or_(
           Chip.chip_number.ilike(pattern),
-          User.phone_number.ilike(pattern),
           User.id_number.ilike(pattern),
+          UserPhone.phone_number.ilike(pattern),
         )
-      )
+      ).distinct()
     return query.order_by(Chip.id)
 
   @staticmethod

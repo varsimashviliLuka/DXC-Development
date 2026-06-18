@@ -15,7 +15,7 @@
       "user_id",
       "Resident",
       url_for("admin_api.search_users"),
-      "Search by phone, ID, or name...",
+      "Search by ID, phone, or name...",
       required=true
     ) }}
     <div class="form-group">
@@ -47,7 +47,7 @@
         {% for chip in chips %}
         <tr>
           <td><strong>{{ chip.chip_number }}</strong></td>
-          <td>{{ chip.user.phone_number if chip.user else chip.user_id }}</td>
+          <td>{{ chip.user.id_number if chip.user else chip.user_id }}</td>
           <td>{{ badge(chip.status) }}</td>
           <td>
             <div class="table-actions">

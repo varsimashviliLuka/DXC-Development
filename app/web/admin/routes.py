@@ -19,7 +19,7 @@ from app.services.subscription_service import SubscriptionService
 from app.services.transaction_service import TransactionService
 from app.services.user_service import UserService
 from app.web.decorators import admin_required
-from app.web.utils import flash_exception, form_value
+from app.web.utils import flash_exception, form_value, parse_phones_from_form
 
 admin_bp = Blueprint("admin", __name__)
 
@@ -84,9 +84,9 @@ def users():
     try:
       status = UserStatus(request.form.get("status", UserStatus.ACTIVE.value))
       AuthService.register_user(
-        phone_number=form_value(request.form, "phone_number"),
         id_number=form_value(request.form, "id_number"),
         password=form_value(request.form, "password"),
+        phones=parse_phones_from_form(request.form) or None,
         email=form_value(request.form, "email") or None,
         first_name=form_value(request.form, "first_name") or None,
         last_name=form_value(request.form, "last_name") or None,
@@ -125,7 +125,6 @@ def edit_user(user_id):
       UserService.update_user(
         user_id,
         actor=g.current_user,
-        phone_number=form_value(request.form, "phone_number"),
         id_number=form_value(request.form, "id_number"),
         status=UserStatus(form_value(request.form, "status", UserStatus.ACTIVE.value)),
         first_name=form_value(request.form, "first_name") or None,
@@ -135,6 +134,8 @@ def edit_user(user_id):
         password=password or None,
         admin_comment=form_value(request.form, "admin_comment") or None,
         admin_comment_set=True,
+        phones=parse_phones_from_form(request.form),
+        phones_set=True,
       )
       flash("User updated.", "success")
       return redirect(url_for("admin.users"))

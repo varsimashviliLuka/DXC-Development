@@ -118,7 +118,7 @@
                     {% if user_name %}
                       <strong class="txn-user-name">{{ user_name }}</strong>
                     {% endif %}
-                    <span class="txn-user-phone">{{ txn.user.phone_number if txn.user else txn.user_id }}</span>
+                    <span class="txn-user-phone">{{ txn.user.id_number if txn.user else txn.user_id }}</span>
                     {% if txn.user and txn.user.id_number %}
                       <span class="muted txn-user-meta">ID {{ txn.user.id_number }}</span>
                     {% endif %}

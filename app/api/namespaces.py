@@ -28,8 +28,17 @@ health_ns = Namespace("health", description="Health checks")
 login_model = auth_ns.model(
   "Login",
   {
-    "phone_number": fields.String(required=True, example="+995592159199"),
+    "id_number": fields.String(required=True, example="01124096118"),
     "password": fields.String(required=True, example="SecurePass123"),
+  },
+)
+
+phone_input_model = users_ns.model(
+  "UserPhoneInput",
+  {
+    "phone_number": fields.String(required=True, example="+995592159199"),
+    "label": fields.String(example="Personal"),
+    "is_primary": fields.Boolean(default=False),
   },
 )
 
@@ -52,9 +61,9 @@ change_password_model = me_ns.model(
 register_user_model = users_ns.model(
   "RegisterUser",
   {
-    "phone_number": fields.String(required=True),
-    "id_number": fields.String(required=True),
+    "id_number": fields.String(required=True, example="01124096118"),
     "password": fields.String(required=True),
+    "phones": fields.List(fields.Nested(phone_input_model)),
     "email": fields.String,
     "first_name": fields.String,
     "last_name": fields.String,
@@ -133,9 +142,9 @@ class LoginResource(Resource):
   @auth_ns.expect(login_model, validate=True)
   @auth_ns.marshal_with(token_response)
   def post(self):
-    """Authenticate with phone number and password."""
+    """Authenticate with ID number and password."""
     payload = auth_ns.payload
-    return AuthService.login(payload["phone_number"], payload["password"])
+    return AuthService.login(payload["id_number"], payload["password"])
 
 
 @auth_ns.route("/me")
@@ -157,9 +166,9 @@ class UsersResource(Resource):
     payload = users_ns.payload
     status = UserStatus(payload.get("status", UserStatus.ACTIVE.value))
     user = AuthService.register_user(
-      phone_number=payload["phone_number"],
       id_number=payload["id_number"],
       password=payload["password"],
+      phones=payload.get("phones"),
       email=payload.get("email"),
       first_name=payload.get("first_name"),
       last_name=payload.get("last_name"),
@@ -206,7 +215,6 @@ class UserResource(Resource):
     user = UserService.update_user(
       user_id,
       actor=g.current_user,
-      phone_number=payload.get("phone_number"),
       id_number=payload.get("id_number"),
       status=status,
       first_name=payload.get("first_name"),
@@ -216,6 +224,8 @@ class UserResource(Resource):
       password=payload.get("password"),
       admin_comment=payload.get("admin_comment"),
       admin_comment_set="admin_comment" in payload,
+      phones=payload.get("phones"),
+      phones_set="phones" in payload,
     )
     return user.to_dict(include_admin=True)
 

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros/ui.html" import page_header, combobox %}
+{% from "macros/ui.html" import page_header, combobox, edit_panel_footer %}
 
 {% block title %}Edit Subscription — Admin{% endblock %}
 
@@ -8,15 +8,15 @@
 
 <section class="panel">
   <p class="muted">Payment reference: <code>{{ subscription.payment_reference or '—' }}</code></p>
-  <form method="post" class="form form-grid">
+  <form method="post" id="edit-subscription-form" class="form form-grid">
     {{ combobox(
       "user_id",
       "Resident",
       url_for("admin_api.search_users"),
-      "Search by phone, ID, or name...",
+      "Search by ID, phone, or name...",
       required=true,
       value=form.get('user_id', subscription.user_id),
-      label_text=subscription.user.phone_number if subscription.user else ''
+      label_text=subscription.user.id_number if subscription.user else ''
     ) }}
     {{ combobox(
       "building_id",
@@ -58,14 +58,14 @@
       <textarea id="admin_comment" name="admin_comment" rows="4"
                 placeholder="Internal notes visible only to admins">{{ form.get('admin_comment', subscription.admin_comment or '') }}</textarea>
     </div>
-    <div class="form-actions">
-      <a href="{{ url_for('admin.subscriptions') }}" class="btn btn-ghost">Cancel</a>
-      <button type="submit" class="btn btn-primary">Save changes</button>
-    </div>
   </form>
-  <form method="post" action="{{ url_for('admin.delete_subscription', subscription_id=subscription.id) }}" class="form form-actions"
-        onsubmit="return confirm('Delete this subscription permanently?');">
-    <button type="submit" class="btn btn-danger">Delete subscription</button>
-  </form>
+
+  {{ edit_panel_footer(
+    "edit-subscription-form",
+    url_for('admin.subscriptions'),
+    url_for('admin.delete_subscription', subscription_id=subscription.id),
+    "Delete subscription",
+    "Delete this subscription permanently?"
+  ) }}
 </section>
 {% endblock %}

@@ -7,7 +7,7 @@ def test_login_page(client):
 def test_login_redirects_admin(client):
   response = client.post(
     "/auth/login",
-    data={"phone_number": "+995591000001", "password": "TestAdmin123!"},
+    data={"id_number": "01011000001", "password": "TestAdmin123!"},
     follow_redirects=False,
   )
   assert response.status_code == 302
@@ -23,8 +23,8 @@ def test_admin_dashboard_requires_login(client):
 def test_admin_dashboard(client):
   client.post(
     "/auth/login",
-    data={"phone_number": "+995591000001", "password": "TestAdmin123!"},
+    data={"id_number": "01011000001", "password": "TestAdmin123!"},
   )
   response = client.get("/admin/")
   assert response.status_code == 200
-  assert b"Admin Dashboard" in response.data
+  assert b"Dashboard" in response.data

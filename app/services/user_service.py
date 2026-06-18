@@ -5,10 +5,11 @@ from decimal import Decimal
 
 from app.enums import UserRole, UserStatus
 from app.extensions import db
-from app.models import User
+from app.models import User, UserPhone
 from app.security.password import hash_password
+from app.services.phone_service import PhoneService
 from app.utils.errors import ConflictError, ForbiddenError, NotFoundError
-from app.utils.validators import normalize_phone, validate_email, validate_id_number, validate_password
+from app.utils.validators import validate_email, validate_id_number, validate_password
 
 logger = logging.getLogger(__name__)
 
@@ -27,15 +28,16 @@ class UserService:
     q = (search or "").strip()
     if q:
       pattern = f"%{q}%"
-      query = query.filter(
+      query = query.outerjoin(UserPhone).filter(
         db.or_(
-          User.phone_number.ilike(pattern),
           User.id_number.ilike(pattern),
           User.email.ilike(pattern),
           User.first_name.ilike(pattern),
           User.last_name.ilike(pattern),
+          UserPhone.phone_number.ilike(pattern),
+          UserPhone.label.ilike(pattern),
         )
-      )
+      ).distinct()
     return query.order_by(User.id)
 
   @staticmethod
@@ -56,7 +58,6 @@ class UserService:
     user_id: int,
     *,
     actor: User,
-    phone_number: str | None = None,
     id_number: str | None = None,
     status: UserStatus | None = None,
     first_name: str | None = None,
@@ -66,19 +67,12 @@ class UserService:
     password: str | None = None,
     admin_comment: str | None = None,
     admin_comment_set: bool = False,
+    phones: list[dict] | None = None,
+    phones_set: bool = False,
   ) -> User:
     user = UserService.get_by_id(user_id)
     if user.is_admin() and not actor.is_admin():
       raise ForbiddenError("Cannot modify admin account")
-
-    if phone_number is not None:
-      phone = normalize_phone(phone_number)
-      existing = User.query.filter(
-        User.phone_number == phone, User.id != user.id
-      ).first()
-      if existing:
-        raise ConflictError("Phone number already registered")
-      user.phone_number = phone
 
     if id_number is not None:
       id_num = validate_id_number(id_number)
@@ -106,6 +100,8 @@ class UserService:
       user.password_hash = hash_password(validate_password(password))
     if admin_comment_set:
       user.admin_comment = (admin_comment or "").strip() or None
+    if phones_set:
+      PhoneService.replace_phones(user, phones or [])
 
     db.session.commit()
     logger.info("Updated user_id=%s by actor_id=%s", user.id, actor.id)
@@ -113,7 +109,6 @@ class UserService:
 
   @staticmethod
   def delete(user_id: int, *, actor: User) -> None:
-    from app.enums import UserRole
     from app.models import BankImport, Subscription, Transaction
 
     user = UserService.get_by_id(user_id)

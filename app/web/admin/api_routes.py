@@ -11,10 +11,14 @@ admin_api_bp = Blueprint("admin_api", __name__)
 
 def _user_option(user):
   name = " ".join(filter(None, [user.first_name, user.last_name])).strip()
-  sub = " · ".join(filter(None, [user.id_number, name]))
+  phones = user.phones.all()
+  phone_bits = [p.phone_number for p in phones[:2]]
+  if len(phones) > 2:
+    phone_bits.append("…")
+  sub = " · ".join(filter(None, [name, ", ".join(phone_bits) if phone_bits else None]))
   return {
     "id": user.id,
-    "label": user.phone_number,
+    "label": user.id_number,
     "sub": sub or user.id_number,
   }
 
@@ -22,9 +26,38 @@ def _user_option(user):
 def _building_option(building):
   return {
     "id": building.id,
-    "label": f"{building.building_number} (#{building.id})",
+    "label": building.building_number,
     "sub": building.name,
   }
+
+
+@admin_api_bp.route("/check-phone")
+@admin_required
+def check_phone():
+  from app.models import UserPhone
+  from app.utils.validators import ValidationError, normalize_phone
+
+  phone_raw = request.args.get("phone", "").strip()
+  exclude_user_id = request.args.get("exclude_user_id", type=int)
+
+  if not phone_raw:
+    return jsonify({"ok": False, "message": "Enter a phone number first"})
+
+  try:
+    phone = normalize_phone(phone_raw)
+  except ValidationError as exc:
+    return jsonify({"ok": False, "message": str(exc)})
+
+  record = UserPhone.query.filter_by(phone_number=phone).first()
+  if record and record.user_id != exclude_user_id:
+    return jsonify({
+      "ok": False,
+      "taken": True,
+      "message": "This phone number is already registered to another user",
+      "phone": phone,
+    })
+
+  return jsonify({"ok": True, "phone": phone})
 
 
 @admin_api_bp.route("/search/users")

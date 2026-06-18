@@ -1,6 +1,6 @@
 def test_chip_activate_deactivate(client, admin_headers, registered_user):
   users = client.get("/api/v1/users", headers=admin_headers).get_json()["items"]
-  user_id = next(u["id"] for u in users if u["phone_number"] == registered_user["phone_number"])
+  user_id = next(u["id"] for u in users if u["id_number"] == registered_user["id_number"])
 
   chip_resp = client.post(
     "/api/v1/chips",
