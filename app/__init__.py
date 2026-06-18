@@ -4,7 +4,7 @@ import logging
 import os
 import uuid
 
-from flask import Flask, g, jsonify, render_template, request, session
+from flask import Flask, current_app, g, jsonify, render_template, request, session
 
 from app.api import register_api
 from app.config import config_by_name
@@ -14,6 +14,7 @@ from app.scheduler import init_scheduler, shutdown_scheduler
 from app.security.jwt_handlers import register_jwt_handlers
 from app.services.auth_service import AuthService
 from app.utils.errors import AppError
+from app.utils.formatting import external_url
 from app.utils.logging import setup_logging
 from app.web import register_web_blueprints
 
@@ -85,12 +86,20 @@ def create_app(config_name=None):
     user_id = session.get("user_id")
     if user_id:
       user = db.session.get(User, int(user_id))
-    return {"current_user": user}
+    return {
+      "current_user": user,
+      "app_name": current_app.config["APP_NAME"],
+      "app_name_full": current_app.config["APP_NAME_FULL"],
+    }
+
+  @app.template_filter("external_url")
+  def external_url_filter(value):
+    return external_url(value)
 
   from flask import Blueprint
 
   api_blueprint = Blueprint("api", __name__, url_prefix="/api/v1")
-  register_api(api_blueprint)
+  register_api(api_blueprint, app_name=app.config["APP_NAME"])
   app.register_blueprint(api_blueprint)
   register_web_blueprints(app)
 

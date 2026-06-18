@@ -292,6 +292,10 @@ class BankImportService:
       bank_import_id=bank_import.id,
     )
     db.session.add(txn)
+
+    from app.services.subscription_service import SubscriptionService
+
+    SubscriptionService.reconcile_after_balance_change(user)
     return txn
 
   @staticmethod
@@ -331,6 +335,10 @@ class BankImportService:
         bank_import_id=bank_import.id if idx == 1 else None,
       )
       db.session.add(txn)
+
+      from app.services.subscription_service import SubscriptionService
+
+      SubscriptionService.reconcile_after_balance_change(user)
 
   @staticmethod
   def list_unmatched(limit: int = 20):

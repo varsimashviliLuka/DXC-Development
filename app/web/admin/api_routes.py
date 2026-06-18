@@ -31,6 +31,17 @@ def _building_option(building):
   }
 
 
+@admin_api_bp.route("/transactions/<int:transaction_id>/bank-import")
+@admin_required
+def transaction_bank_import(transaction_id):
+  from app.services.transaction_service import TransactionService
+
+  details = TransactionService.get_bank_import_details(transaction_id)
+  if not details:
+    return jsonify({"message": "Bank import not found for this transaction"}), 404
+  return jsonify(details)
+
+
 @admin_api_bp.route("/check-phone")
 @admin_required
 def check_phone():

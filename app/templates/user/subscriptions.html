@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "macros/pagination.html" import render_pagination %}
 {% from "macros/ui.html" import page_header, money, badge %}
 
 {% block title %}My Subscriptions{% endblock %}
@@ -7,9 +8,16 @@
 {{ page_header("My subscriptions", "Door-level billing for your buildings.") }}
 
 <section class="panel">
+  <div class="panel-header user-list-header">
+    <div>
+      <h2>Your subscriptions</h2>
+      <p class="muted user-list-count">{{ pagination.total }} subscription{{ 's' if pagination.total != 1 else '' }}</p>
+    </div>
+  </div>
+
   {% if subscriptions %}
   <div class="table-wrap">
-    <table class="data-table">
+    <table class="data-table user-records-table">
       <thead>
         <tr>
           <th>Building</th>
@@ -23,17 +31,18 @@
       <tbody>
         {% for sub in subscriptions %}
         <tr>
-          <td>{{ sub.building.name if sub.building else sub.building_id }}</td>
-          <td>{{ sub.door_number }}</td>
-          <td><code>{{ sub.payment_reference or '—' }}</code></td>
-          <td>{{ money(sub.monthly_fee) }}</td>
-          <td>{{ badge(sub.status) }}</td>
-          <td>{{ sub.next_payment_due or '—' }}</td>
+          <td data-label="Building">{{ sub.building.name if sub.building else sub.building_id }}</td>
+          <td data-label="Door">{{ sub.door_number }}</td>
+          <td data-label="Payment reference"><code>{{ sub.payment_reference or '—' }}</code></td>
+          <td data-label="Monthly fee">{{ money(sub.monthly_fee) }}</td>
+          <td data-label="Status">{{ badge(sub.status) }}</td>
+          <td data-label="Next due">{{ sub.next_payment_due or '—' }}</td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
+  {{ render_pagination(pagination, 'user.subscriptions') }}
   {% else %}
   <p class="muted">You have no subscriptions.</p>
   {% endif %}

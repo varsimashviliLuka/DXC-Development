@@ -1,10 +1,14 @@
 {% extends "base.html" %}
 {% from "macros/ui.html" import page_header, badge, money %}
+{% from "macros/pagination.html" import render_pagination %}
 
 {% block title %}Transactions — Admin{% endblock %}
 
 {% block content %}
-<div class="transactions-page">
+<div
+  class="transactions-page"
+  data-bank-import-url="{{ url_for('admin_api.transaction_bank_import', transaction_id=0) }}"
+>
   {{ page_header("Transactions", "All ledger entries with admin filtering.") }}
 
   <details class="panel transactions-filters" open>
@@ -63,7 +67,7 @@
 
       <div class="form-group form-group-full">
         <label for="q">Search</label>
-        <input type="text" id="q" name="q" value="{{ filters.get('q','') }}" placeholder="Reference, description, phone, ID...">
+        <input type="text" id="q" name="q" value="{{ filters.get('q','') }}" placeholder="Reference, description, name, phone, ID...">
       </div>
 
       <div class="form-actions transactions-filter-actions">
@@ -77,7 +81,7 @@
     <div class="panel-header transactions-results-header">
       <div>
         <h2>Results</h2>
-        <p class="muted transactions-results-count">{{ result_count }} transaction{{ 's' if result_count != 1 else '' }}</p>
+        <p class="muted transactions-results-count">{{ pagination.total }} transaction{{ 's' if pagination.total != 1 else '' }}</p>
       </div>
       {% if transactions %}
         <p class="muted transactions-results-tip">Double-click a row with bank data to view details</p>
@@ -104,8 +108,8 @@
             {% for txn in transactions %}
               {% set user_name = ((txn.user.first_name or '') ~ ' ' ~ (txn.user.last_name or '')).strip() if txn.user else '' %}
               <tr
-                class="txn-row{% if txn.bank_import %} txn-row-clickable{% endif %}"
-                {% if txn.bank_import %}data-open-bank-details="bank-details-{{ txn.id }}"{% endif %}
+                class="txn-row{% if txn.bank_import_id %} txn-row-clickable{% endif %}"
+                {% if txn.bank_import_id %}data-open-bank-details="{{ txn.id }}"{% endif %}
               >
                 <td data-label="Date">
                   <span class="txn-date">{{ txn.created_at.strftime('%Y-%m-%d') if txn.created_at else '—' }}</span>
@@ -156,11 +160,11 @@
                   <span class="txn-description">{{ txn.description or '—' }}</span>
                 </td>
                 <td data-label="Details" class="txn-actions-cell">
-                  {% if txn.bank_import %}
+                  {% if txn.bank_import_id %}
                     <button
                       type="button"
                       class="btn btn-secondary btn-sm txn-details-btn"
-                      data-open-bank-details="bank-details-{{ txn.id }}"
+                      data-open-bank-details="{{ txn.id }}"
                       aria-label="View bank details">
                       Details
                     </button>
@@ -173,6 +177,7 @@
           </tbody>
         </table>
       </div>
+      {{ render_pagination(pagination, 'admin.transactions', params=filter_params) }}
     {% else %}
       <div class="transactions-empty">
         <p>No transactions found for the current filters.</p>
@@ -182,79 +187,22 @@
   </section>
 </div>
 
-{% for txn in transactions %}
-  {% if txn.bank_import %}
-    {% set b = txn.bank_import %}
-    {% set user_name = ((txn.user.first_name or '') ~ ' ' ~ (txn.user.last_name or '')).strip() if txn.user else '' %}
-    <dialog id="bank-details-{{ txn.id }}" class="txn-dialog">
-      <div class="txn-dialog-card">
-        <header class="txn-dialog-header">
-          <div>
-            <p class="txn-dialog-eyebrow">Bank import</p>
-            <h3 class="txn-dialog-title">{{ money(b.amount) }} {{ b.currency or 'GEL' }}</h3>
-            <p class="muted txn-dialog-subtitle">
-              {{ b.transaction_date or (txn.created_at.strftime('%Y-%m-%d') if txn.created_at else 'No date') }}
-              {% if user_name %} · {{ user_name }}{% endif %}
-            </p>
-          </div>
-          <button type="button" class="txn-dialog-close" data-close-dialog aria-label="Close">&times;</button>
-        </header>
-
-        <div class="txn-dialog-body">
-          <div class="txn-dialog-badges">
-            {{ badge(b.match_status) }}
-            {% if b.match_method %}{{ badge(b.match_method) }}{% endif %}
-            {{ badge(txn.transaction_type) }}
-          </div>
-
-          <section class="txn-dialog-section">
-            <h4>Transfer</h4>
-            <dl class="detail-list txn-detail-grid">
-              <dt>Bank transaction ID</dt><dd><code>{{ b.bank_transaction_id }}</code></dd>
-              <dt>Import batch</dt><dd><code>{{ b.import_batch_id }}</code></dd>
-              <dt>Bank type</dt><dd>{{ b.bank_transaction_type or '—' }}</dd>
-              <dt>Document no.</dt><dd>{{ b.document_number or '—' }}</dd>
-              <dt>Description</dt><dd>{{ b.description or '—' }}</dd>
-              <dt>Additional info</dt><dd>{{ b.additional_information or '—' }}</dd>
-              <dt>Additional description</dt><dd>{{ b.additional_description or '—' }}</dd>
-            </dl>
-          </section>
-
-          <section class="txn-dialog-section">
-            <h4>Payer</h4>
-            <dl class="detail-list txn-detail-grid">
-              <dt>Name</dt>
-              <dd>
-                {% if b.partner_first_name or b.partner_last_name %}
-                  {{ b.partner_first_name or '' }} {{ b.partner_last_name or '' }}
-                {% else %}
-                  {{ b.partner_name or b.partner_name_raw or '—' }}
-                {% endif %}
-              </dd>
-              <dt>Tax code</dt><dd>{{ b.partner_tax_code or '—' }}</dd>
-              <dt>Account</dt><dd>{{ b.partner_account or '—' }}</dd>
-            </dl>
-          </section>
-
-          <section class="txn-dialog-section">
-            <h4>Matching</h4>
-            <dl class="detail-list txn-detail-grid">
-              <dt>Match hint</dt><dd>{{ b.match_hint or '—' }}</dd>
-              <dt>Skip reason</dt><dd>{{ b.skip_reason or '—' }}</dd>
-              <dt>Ledger reference</dt><dd><code>{{ txn.reference or '—' }}</code></dd>
-              {% if txn.subscription %}
-                <dt>Payment reference</dt><dd><code>{{ txn.subscription.payment_reference or '—' }}</code></dd>
-                <dt>Door</dt><dd>{{ txn.subscription.door_number }}</dd>
-              {% endif %}
-            </dl>
-          </section>
-        </div>
-
-        <footer class="txn-dialog-footer">
-          <button type="button" class="btn btn-primary btn-block" data-close-dialog>Close</button>
-        </footer>
+<dialog id="bank-import-dialog" class="txn-dialog">
+  <div class="txn-dialog-card">
+    <header class="txn-dialog-header">
+      <div>
+        <p class="txn-dialog-eyebrow">Bank import</p>
+        <h3 class="txn-dialog-title" data-bank-dialog-title>Loading…</h3>
+        <p class="muted txn-dialog-subtitle" data-bank-dialog-subtitle></p>
       </div>
-    </dialog>
-  {% endif %}
-{% endfor %}
+      <button type="button" class="txn-dialog-close" data-close-dialog aria-label="Close">&times;</button>
+    </header>
+    <div class="txn-dialog-body" data-bank-dialog-body>
+      <p class="muted">Loading bank import details…</p>
+    </div>
+    <footer class="txn-dialog-footer">
+      <button type="button" class="btn btn-primary btn-block" data-close-dialog>Close</button>
+    </footer>
+  </div>
+</dialog>
 {% endblock %}

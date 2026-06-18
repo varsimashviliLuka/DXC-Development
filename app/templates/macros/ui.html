@@ -43,12 +43,40 @@
 <span class="money {{ class }}">{{ '%.2f'|format(amount|float) }} ₾</span>
 {% endmacro %}
 
-{% macro user_phones_cell(user) %}
+{% macro address_display(address) %}
+{% if address %}
+  {% set map_url = address|external_url %}
+  {% if map_url %}
+    <a href="{{ map_url }}" class="address-map-link" target="_blank" rel="noopener noreferrer">Open in map</a>
+  {% else %}
+    <span class="address-text">{{ address }}</span>
+  {% endif %}
+{% else %}
+  <span class="muted">—</span>
+{% endif %}
+{% endmacro %}
+
+{% macro resident_cell(user) %}
+{% if user %}
+  {% set user_name = ((user.first_name or '') ~ ' ' ~ (user.last_name or '')).strip() %}
+  <div class="resident-cell">
+    {% if user_name %}
+      <strong class="resident-cell-name">{{ user_name }}</strong>
+    {% endif %}
+    <span class="resident-cell-id">ID {{ user.id_number }}</span>
+    <div class="resident-cell-phones">{{ user_phones_cell(user) }}</div>
+  </div>
+{% else %}
+  <span class="muted">Unknown user</span>
+{% endif %}
+{% endmacro %}
+
+{% macro user_phones_cell(user, show_labels=true) %}
 {% set phones = user.phones.all() %}
 {% if phones %}
   {% for phone in phones %}
     <span class="phone-chip{% if phone.is_primary %} phone-chip-primary{% endif %}">
-      {{ phone.phone_number }}{% if phone.label %} <span class="muted">· {{ phone.label }}</span>{% endif %}
+      {{ phone.phone_number }}{% if show_labels and phone.label %} <span class="muted">· {{ phone.label }}</span>{% endif %}
     </span>{% if not loop.last %} {% endif %}
   {% endfor %}
 {% else %}
@@ -62,7 +90,7 @@
      data-check-url="{{ url_for('admin_api.check_phone') }}"
      {% if exclude_user_id is not none %}data-exclude-user-id="{{ exclude_user_id }}"{% endif %}>
   <span class="form-label">Phone numbers</span>
-  <p class="muted form-hint">Add personal and family numbers. Numbers are checked when you add another row or leave the field.</p>
+  <p class="muted form-hint">Add personal and family numbers. Labels are admin-only. Numbers are checked when you add another row or leave the field.</p>
   <div class="phone-rows">
     {% set phone_items = phones if phones else [] %}
     {% if not phone_items %}

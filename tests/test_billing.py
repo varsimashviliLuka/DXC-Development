@@ -68,6 +68,51 @@ def test_process_due_payment_marks_overdue_when_insufficient(app, user_with_subs
     assert sub.status == SubscriptionStatus.OVERDUE
 
 
+def test_payment_restores_overdue_subscription_to_active(app, user_with_subscription):
+  with app.app_context():
+    user = db.session.get(User, user_with_subscription["user_id"])
+    sub = db.session.get(Subscription, user_with_subscription["subscription_id"])
+    user.balance = Decimal("10.00")
+    db.session.commit()
+
+    SubscriptionService.process_due_payments(for_date=date.today())
+    db.session.refresh(user)
+    db.session.refresh(sub)
+    assert sub.status == SubscriptionStatus.OVERDUE
+    assert float(user.balance) == -20.0
+
+    TransactionService.record_payment(
+      user=user,
+      amount=Decimal("25.00"),
+      reference="TEST-RESTORE-REF",
+    )
+    db.session.refresh(sub)
+    assert float(user.balance) == 5.0
+    assert sub.status == SubscriptionStatus.ACTIVE
+
+
+def test_partial_payment_keeps_subscription_overdue(app, user_with_subscription):
+  with app.app_context():
+    user = db.session.get(User, user_with_subscription["user_id"])
+    sub = db.session.get(Subscription, user_with_subscription["subscription_id"])
+    user.balance = Decimal("10.00")
+    db.session.commit()
+
+    SubscriptionService.process_due_payments(for_date=date.today())
+    db.session.refresh(sub)
+    assert sub.status == SubscriptionStatus.OVERDUE
+
+    TransactionService.record_payment(
+      user=user,
+      amount=Decimal("10.00"),
+      reference="TEST-PARTIAL-REF",
+    )
+    db.session.refresh(user)
+    db.session.refresh(sub)
+    assert float(user.balance) == -10.0
+    assert sub.status == SubscriptionStatus.OVERDUE
+
+
 def test_payment_increases_balance(app, registered_user, admin_headers, client):
   with app.app_context():
     user = User.query.filter_by(id_number=registered_user["id_number"]).first()

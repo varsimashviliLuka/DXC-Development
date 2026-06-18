@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "macros/pagination.html" import render_pagination %}
-{% from "macros/ui.html" import page_header, search_bar %}
+{% from "macros/ui.html" import page_header, search_bar, address_display %}
 
 {% block title %}Buildings — Admin{% endblock %}
 
@@ -21,7 +21,9 @@
     </div>
     <div class="form-group form-group-full">
       <label for="address">Address</label>
-      <input type="text" id="address" name="address" value="{{ form.get('address', '') }}">
+      <input type="text" id="address" name="address" value="{{ form.get('address', '') }}"
+             placeholder="Street address or Google Maps link">
+      <p class="muted form-hint">Paste a map link to show “Open in map” in the list, or enter a plain address.</p>
     </div>
     <div class="form-group form-group-full">
       <label for="admin_comment">Admin comment</label>
@@ -56,7 +58,7 @@
           <td>{{ building.id }}</td>
           <td><strong>{{ building.building_number }}</strong></td>
           <td>{{ building.name }}</td>
-          <td>{{ building.address or '—' }}</td>
+          <td>{{ address_display(building.address) }}</td>
           <td class="table-actions">
             <a href="{{ url_for('admin.edit_building', building_id=building.id) }}" class="btn btn-ghost btn-sm">Edit</a>
             <form method="post" action="{{ url_for('admin.delete_building', building_id=building.id) }}" class="inline-form"

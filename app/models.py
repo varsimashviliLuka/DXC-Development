@@ -86,7 +86,10 @@ class User(TimestampMixin, db.Model):
     return name or self.id_number
 
   def to_dict(self, include_sensitive=False, include_admin=False):
-    phone_list = [p.to_dict() for p in self.phones.all()]
+    phone_list = [
+      p.to_dict(include_label=include_admin)
+      for p in self.phones.all()
+    ]
     data = {
       "id": self.id,
       "id_number": self.id_number,
@@ -121,14 +124,16 @@ class UserPhone(TimestampMixin, db.Model):
 
   user = db.relationship("User", back_populates="phones")
 
-  def to_dict(self):
-    return {
+  def to_dict(self, include_label=False):
+    data = {
       "id": self.id,
       "phone_number": self.phone_number,
-      "label": self.label,
       "is_primary": self.is_primary,
       "created_at": self.created_at.isoformat() if self.created_at else None,
     }
+    if include_label:
+      data["label"] = self.label
+    return data
 
 
 class Building(TimestampMixin, db.Model):

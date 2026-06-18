@@ -6,14 +6,14 @@
 {% block content %}
 {{ page_header("Profile", "Your account details.") }}
 
-<section class="panel">
+<section class="panel user-profile-panel">
   <dl class="detail-list">
-    <dt>ID number</dt><dd><strong>{{ user.id_number }}</strong></dd>
-    <dt>Phone numbers</dt><dd>{{ user_phones_cell(user) }}</dd>
-    <dt>Email</dt><dd>{{ user.email or '—' }}</dd>
-    <dt>Name</dt><dd>{{ user.first_name or '' }} {{ user.last_name or '' }}</dd>
-    <dt>Balance</dt><dd>{{ money(user.balance, 'text-success' if user.balance >= 0 else 'text-danger') }}</dd>
-    <dt>Status</dt><dd>{{ badge(user.status) }}</dd>
+    <dt>ID number</dt><dd class="detail-list-value"><strong>{{ user.id_number }}</strong></dd>
+    <dt>Phone numbers</dt><dd class="detail-list-value">{{ user_phones_cell(user, show_labels=false) }}</dd>
+    <dt>Email</dt><dd class="detail-list-value detail-list-value-break">{{ user.email or '—' }}</dd>
+    <dt>Name</dt><dd class="detail-list-value">{{ user.first_name or '' }} {{ user.last_name or '' }}</dd>
+    <dt>Balance</dt><dd class="detail-list-value">{{ money(user.balance, 'text-success' if user.balance >= 0 else 'text-danger') }}</dd>
+    <dt>Status</dt><dd class="detail-list-value">{{ badge(user.status) }}</dd>
   </dl>
   <div class="form-actions">
     <a href="{{ url_for('user.password') }}" class="btn btn-secondary">Change password</a>

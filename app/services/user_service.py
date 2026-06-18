@@ -1,7 +1,6 @@
 """User management service."""
 
 import logging
-from decimal import Decimal
 
 from app.enums import UserRole, UserStatus
 from app.extensions import db
@@ -9,6 +8,7 @@ from app.models import User, UserPhone
 from app.security.password import hash_password
 from app.services.phone_service import PhoneService
 from app.utils.errors import ConflictError, ForbiddenError, NotFoundError
+from app.utils.search import filter_by_terms, search_terms, user_search_exprs
 from app.utils.validators import validate_email, validate_id_number, validate_password
 
 logger = logging.getLogger(__name__)
@@ -23,26 +23,37 @@ class UserService:
     return user
 
   @staticmethod
-  def _users_query(search: str | None = None):
+  def _users_query(
+    search: str | None = None,
+    *,
+    negative_balance_only: bool = False,
+  ):
     query = User.query.filter(User.role != UserRole.ADMIN)
-    q = (search or "").strip()
-    if q:
-      pattern = f"%{q}%"
-      query = query.outerjoin(UserPhone).filter(
-        db.or_(
-          User.id_number.ilike(pattern),
-          User.email.ilike(pattern),
-          User.first_name.ilike(pattern),
-          User.last_name.ilike(pattern),
-          UserPhone.phone_number.ilike(pattern),
-          UserPhone.label.ilike(pattern),
-        )
-      ).distinct()
-    return query.order_by(User.id)
+    if negative_balance_only:
+      query = query.filter(User.balance < 0)
+    terms = search_terms(search)
+    if terms:
+      query = query.outerjoin(UserPhone)
+      query = filter_by_terms(query, terms, *user_search_exprs())
+      query = query.distinct()
+    return query.order_by(
+      User.last_name.asc(),
+      User.first_name.asc(),
+      User.id_number.asc(),
+    )
 
   @staticmethod
-  def list_users(page: int = 1, per_page: int = 20, search: str | None = None):
-    return UserService._users_query(search).paginate(
+  def list_users(
+    page: int = 1,
+    per_page: int = 20,
+    search: str | None = None,
+    *,
+    negative_balance_only: bool = False,
+  ):
+    return UserService._users_query(
+      search,
+      negative_balance_only=negative_balance_only,
+    ).paginate(
       page=page,
       per_page=per_page,
       error_out=False,
@@ -63,7 +74,6 @@ class UserService:
     first_name: str | None = None,
     last_name: str | None = None,
     email: str | None = None,
-    balance: Decimal | None = None,
     password: str | None = None,
     admin_comment: str | None = None,
     admin_comment_set: bool = False,
@@ -94,8 +104,6 @@ class UserService:
       ).first():
         raise ConflictError("Email address already registered")
       user.email = email_addr
-    if balance is not None and actor.is_admin():
-      user.balance = balance
     if password is not None:
       user.password_hash = hash_password(validate_password(password))
     if admin_comment_set:

@@ -153,7 +153,7 @@ class AuthMeResource(Resource):
   @jwt_required_custom
   def get(self):
     """Return the currently authenticated user."""
-    return g.current_user.to_dict()
+    return g.current_user.to_dict(include_admin=g.current_user.is_admin())
 
 
 @users_ns.route("")
@@ -174,7 +174,7 @@ class UsersResource(Resource):
       last_name=payload.get("last_name"),
       status=status,
     )
-    return user.to_dict(), 201
+    return user.to_dict(include_admin=True), 201
 
   @_handle_errors
   @admin_required
@@ -184,7 +184,7 @@ class UsersResource(Resource):
     args = pagination_parser.parse_args()
     page = UserService.list_users(page=args["page"], per_page=args["per_page"])
     return {
-      "items": [u.to_dict() for u in page.items],
+      "items": [u.to_dict(include_admin=True) for u in page.items],
       "total": page.total,
       "page": page.page,
       "per_page": page.per_page,
@@ -207,11 +207,8 @@ class UserResource(Resource):
   @_handle_errors
   @admin_required
   def patch(self, user_id):
-    from decimal import Decimal
-
     payload = users_ns.payload or {}
     status = UserStatus(payload["status"]) if "status" in payload else None
-    balance = Decimal(str(payload["balance"])) if "balance" in payload else None
     user = UserService.update_user(
       user_id,
       actor=g.current_user,
@@ -220,7 +217,6 @@ class UserResource(Resource):
       first_name=payload.get("first_name"),
       last_name=payload.get("last_name"),
       email=payload.get("email"),
-      balance=balance,
       password=payload.get("password"),
       admin_comment=payload.get("admin_comment"),
       admin_comment_set="admin_comment" in payload,

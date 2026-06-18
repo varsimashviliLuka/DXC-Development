@@ -48,10 +48,27 @@ def dashboard():
   )
 
 
+TXN_FILTER_KEYS = (
+  "date_from",
+  "date_to",
+  "phone_number",
+  "id_number",
+  "transaction_reference",
+  "subscription_payment_reference",
+  "transaction_type",
+  "status",
+  "q",
+)
+
+
+def _transaction_filter_params():
+  return {k: request.args.get(k) for k in TXN_FILTER_KEYS if request.args.get(k)}
+
+
 @admin_bp.route("/transactions", methods=["GET"])
 @admin_required
 def transactions():
-  txns = TransactionService.list_admin(
+  page = TransactionService.list_admin(
     date_from=form_value(request.args, "date_from") if request.args else None,
     date_to=form_value(request.args, "date_to") if request.args else None,
     phone_number=form_value(request.args, "phone_number") if request.args else None,
@@ -65,16 +82,32 @@ def transactions():
     transaction_type=form_value(request.args, "transaction_type") if request.args else None,
     status=form_value(request.args, "status") if request.args else None,
     free_text=form_value(request.args, "q") if request.args else None,
-    limit=500,
+    page=int(request.args.get("page", 1)),
+    per_page=20,
   )
   return render_template(
     "admin/transactions.html",
-    transactions=txns,
+    transactions=page.items,
+    pagination=page,
     filters=request.args,
-    result_count=len(txns),
+    filter_params=_transaction_filter_params(),
     transaction_types=list(TransactionType),
     transaction_statuses=list(TransactionStatus),
   )
+
+
+def _user_filter_params():
+  params = {}
+  q = _search_q()
+  if q:
+    params["q"] = q
+  if request.args.get("negative_balance") == "1":
+    params["negative_balance"] = "1"
+  return params
+
+
+def _negative_balance_filter():
+  return request.args.get("negative_balance") == "1"
 
 
 @admin_bp.route("/users", methods=["GET", "POST"])
@@ -99,10 +132,12 @@ def users():
       flash_exception(exc)
 
   q = _search_q()
+  negative_balance_only = _negative_balance_filter()
   page = UserService.list_users(
     page=int(request.args.get("page", 1)),
     per_page=20,
     search=q,
+    negative_balance_only=negative_balance_only,
   )
   return render_template(
     "admin/users.html",
@@ -111,6 +146,8 @@ def users():
     form=request.form,
     statuses=list(UserStatus),
     search_q=q or "",
+    negative_balance_only=negative_balance_only,
+    filter_params=_user_filter_params(),
   )
 
 
@@ -120,7 +157,6 @@ def edit_user(user_id):
   user = UserService.get_by_id(user_id)
   if request.method == "POST":
     try:
-      balance_raw = form_value(request.form, "balance")
       password = form_value(request.form, "password")
       UserService.update_user(
         user_id,
@@ -130,7 +166,6 @@ def edit_user(user_id):
         first_name=form_value(request.form, "first_name") or None,
         last_name=form_value(request.form, "last_name") or None,
         email=form_value(request.form, "email") or None,
-        balance=Decimal(balance_raw) if balance_raw else None,
         password=password or None,
         admin_comment=form_value(request.form, "admin_comment") or None,
         admin_comment_set=True,
@@ -147,7 +182,39 @@ def edit_user(user_id):
     user=user,
     statuses=list(UserStatus),
     form=request.form,
+    balance_form={},
   )
+
+
+@admin_bp.route("/users/<int:user_id>/balance", methods=["POST"])
+@admin_required
+def adjust_user_balance(user_id):
+  user = UserService.get_by_id(user_id)
+  try:
+    direction = form_value(request.form, "direction")
+    amount_raw = form_value(request.form, "amount")
+    if not amount_raw:
+      raise ValueError("Enter an amount")
+    amount = Decimal(amount_raw)
+    reason = form_value(request.form, "reason") or None
+    TransactionService.record_admin_adjustment(
+      user=user,
+      amount=amount,
+      direction=direction,
+      description=reason,
+    )
+    verb = "added to" if direction == "add" else "subtracted from"
+    flash(f"{amount:.2f} ₾ {verb} account balance.", "success")
+    return redirect(url_for("admin.edit_user", user_id=user_id))
+  except Exception as exc:
+    flash_exception(exc)
+    return render_template(
+      "admin/user_edit.html",
+      user=UserService.get_by_id(user_id),
+      statuses=list(UserStatus),
+      form={},
+      balance_form=request.form,
+    )
 
 
 @admin_bp.route("/users/<int:user_id>/delete", methods=["POST"])
@@ -229,6 +296,20 @@ def delete_building(building_id):
   return redirect(url_for("admin.buildings"))
 
 
+def _subscription_filter_params():
+  params = {}
+  q = _search_q()
+  if q:
+    params["q"] = q
+  if request.args.get("overdue") == "1":
+    params["overdue"] = "1"
+  return params
+
+
+def _overdue_only_filter():
+  return request.args.get("overdue") == "1"
+
+
 @admin_bp.route("/subscriptions", methods=["GET", "POST"])
 @admin_required
 def subscriptions():
@@ -256,10 +337,12 @@ def subscriptions():
       flash_exception(exc)
 
   q = _search_q()
+  overdue_only = _overdue_only_filter()
   page = SubscriptionService.list_all(
     page=int(request.args.get("page", 1)),
     per_page=20,
     search=q,
+    overdue_only=overdue_only,
   )
   return render_template(
     "admin/subscriptions.html",
@@ -268,6 +351,8 @@ def subscriptions():
     statuses=list(SubscriptionStatus),
     form=request.form,
     search_q=q or "",
+    overdue_only=overdue_only,
+    filter_params=_subscription_filter_params(),
   )
 
 

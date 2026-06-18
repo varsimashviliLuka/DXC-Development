@@ -5,6 +5,7 @@ from datetime import date
 from decimal import Decimal
 
 from dateutil.relativedelta import relativedelta
+from sqlalchemy.orm import joinedload
 
 from app.enums import SubscriptionStatus, TransactionStatus, TransactionType
 from app.extensions import db
@@ -12,6 +13,12 @@ from app.models import Building, Subscription, Transaction, User, UserPhone
 from app.services.building_service import BuildingService
 from app.services.user_service import UserService
 from app.utils.errors import ConflictError, NotFoundError
+from app.utils.search import (
+  building_search_exprs,
+  filter_by_terms,
+  search_terms,
+  user_search_exprs,
+)
 from app.utils.validators import validate_door_number
 
 logger = logging.getLogger(__name__)
@@ -81,25 +88,60 @@ class SubscriptionService:
     )
 
   @staticmethod
-  def _subscriptions_query(search: str | None = None):
-    query = Subscription.query.join(User).outerjoin(UserPhone).join(Building)
-    q = (search or "").strip()
-    if q:
-      pattern = f"%{q}%"
-      query = query.filter(
-        db.or_(
-          Subscription.door_number.ilike(pattern),
-          User.id_number.ilike(pattern),
-          UserPhone.phone_number.ilike(pattern),
-          Building.building_number.ilike(pattern),
-          Building.name.ilike(pattern),
-        )
-      ).distinct()
-    return query.order_by(Subscription.id)
+  def list_for_user_paginated(user_id: int, page: int = 1, per_page: int = 20):
+    return (
+      Subscription.query.filter_by(user_id=user_id)
+      .options(joinedload(Subscription.building))
+      .order_by(Subscription.id.desc())
+      .paginate(page=page, per_page=per_page, error_out=False)
+    )
 
   @staticmethod
-  def list_all(page: int = 1, per_page: int = 20, search: str | None = None):
-    return SubscriptionService._subscriptions_query(search).paginate(
+  def _subscriptions_query(
+    search: str | None = None,
+    *,
+    overdue_only: bool = False,
+  ):
+    query = (
+      Subscription.query.join(User)
+      .outerjoin(UserPhone)
+      .join(Building)
+      .options(
+        joinedload(Subscription.user),
+        joinedload(Subscription.building),
+      )
+    )
+    if overdue_only:
+      query = query.filter(Subscription.status == SubscriptionStatus.OVERDUE)
+    terms = search_terms(search)
+    if terms:
+      query = filter_by_terms(
+        query,
+        terms,
+        Subscription.door_number,
+        *user_search_exprs(),
+        *building_search_exprs(),
+      ).distinct()
+    return query.order_by(
+      User.last_name.asc(),
+      User.first_name.asc(),
+      User.id_number.asc(),
+      Building.building_number.asc(),
+      Subscription.door_number.asc(),
+    )
+
+  @staticmethod
+  def list_all(
+    page: int = 1,
+    per_page: int = 20,
+    search: str | None = None,
+    *,
+    overdue_only: bool = False,
+  ):
+    return SubscriptionService._subscriptions_query(
+      search,
+      overdue_only=overdue_only,
+    ).paginate(
       page=page,
       per_page=per_page,
       error_out=False,
@@ -233,3 +275,33 @@ class SubscriptionService:
       )
 
     return {"processed": processed, "marked_overdue": marked_overdue}
+
+  @staticmethod
+  def reconcile_after_balance_change(user: User) -> dict:
+    """
+    When the account balance is no longer negative, restore overdue subscriptions to active.
+
+    Fees that push balance below zero are handled in process_due_payments(); this covers
+    the other direction when the user tops up via bank import or manual payment.
+    """
+    reactivated = 0
+    if user.balance is None or user.balance < 0:
+      return {"reactivated": 0}
+
+    overdue_subs = Subscription.query.filter_by(
+      user_id=user.id,
+      status=SubscriptionStatus.OVERDUE,
+    ).all()
+    for sub in overdue_subs:
+      sub.status = SubscriptionStatus.ACTIVE
+      reactivated += 1
+
+    if reactivated:
+      logger.info(
+        "Reactivated %s overdue subscription(s) for user_id=%s balance=%s",
+        reactivated,
+        user.id,
+        user.balance,
+      )
+
+    return {"reactivated": reactivated}

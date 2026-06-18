@@ -42,7 +42,7 @@ class AuthService:
       additional_claims={"role": user.role.value},
     )
     logger.info("User logged in user_id=%s role=%s", user.id, user.role.value)
-    return {"access_token": token, "user": user.to_dict()}
+    return {"access_token": token, "user": user.to_dict(include_admin=user.is_admin())}
 
   @staticmethod
   def ensure_admin_user(app_config) -> User:

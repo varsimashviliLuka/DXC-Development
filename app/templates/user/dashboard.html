@@ -36,11 +36,11 @@
     <dt>Phone numbers</dt><dd>
       {% if summary.user.phones %}
         {% for phone in summary.user.phones %}
-          {{ phone.phone_number }}{% if phone.label %} ({{ phone.label }}){% endif %}{% if not loop.last %}, {% endif %}
+          {{ phone.phone_number }}{% if not loop.last %}, {% endif %}
         {% endfor %}
       {% else %}—{% endif %}
     </dt>
-    <dt>Email</dt><dd>{{ summary.user.email or '—' }}</dd>
+    <dt>Email</dt><dd class="detail-list-value detail-list-value-break">{{ summary.user.email or '—' }}</dd>
     <dt>Status</dt><dd>{{ badge(summary.user.status) }}</dd>
   </dl>
 </section>

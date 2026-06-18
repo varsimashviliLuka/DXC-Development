@@ -130,5 +130,8 @@ class PhoneService:
     return records
 
   @staticmethod
-  def phones_to_dict(user: User) -> list[dict]:
-    return [p.to_dict() for p in user.phones.order_by(UserPhone.is_primary.desc(), UserPhone.id)]
+  def phones_to_dict(user: User, *, include_label: bool = False) -> list[dict]:
+    return [
+      p.to_dict(include_label=include_label)
+      for p in user.phones.order_by(UserPhone.is_primary.desc(), UserPhone.id)
+    ]

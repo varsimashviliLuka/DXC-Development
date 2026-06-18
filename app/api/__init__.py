@@ -14,12 +14,12 @@ from app.api.namespaces import (
 )
 
 
-def register_api(blueprint):
+def register_api(blueprint, *, app_name="DXC"):
   api = Api(
     blueprint,
     version="1.0",
-    title="Elevator Chip API",
-    description="REST API for elevator chip subscriptions, users, and buildings.",
+    title=f"{app_name} API",
+    description=f"REST API for {app_name} — building access, subscriptions, and billing.",
     doc="/docs",
     security="Bearer",
     authorizations={

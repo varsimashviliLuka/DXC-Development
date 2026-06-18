@@ -12,6 +12,8 @@ from app.web.utils import flash_exception, form_value
 
 user_bp = Blueprint("user", __name__)
 
+USER_LIST_PER_PAGE = 20
+
 
 @user_bp.route("/")
 @active_user_required
@@ -23,22 +25,46 @@ def dashboard():
 @user_bp.route("/subscriptions")
 @active_user_required
 def subscriptions():
-  subs = SubscriptionService.list_for_user(g.current_user.id)
-  return render_template("user/subscriptions.html", subscriptions=subs)
+  page = SubscriptionService.list_for_user_paginated(
+    g.current_user.id,
+    page=int(request.args.get("page", 1)),
+    per_page=USER_LIST_PER_PAGE,
+  )
+  return render_template(
+    "user/subscriptions.html",
+    subscriptions=page.items,
+    pagination=page,
+  )
 
 
 @user_bp.route("/chips")
 @active_user_required
 def chips():
-  chips_list = ChipService.list_for_user(g.current_user.id)
-  return render_template("user/chips.html", chips=chips_list)
+  page = ChipService.list_for_user_paginated(
+    g.current_user.id,
+    page=int(request.args.get("page", 1)),
+    per_page=USER_LIST_PER_PAGE,
+  )
+  return render_template(
+    "user/chips.html",
+    chips=page.items,
+    pagination=page,
+  )
 
 
 @user_bp.route("/transactions")
 @active_user_required
 def transactions():
-  txns = TransactionService.list_for_user(g.current_user.id, limit=100)
-  return render_template("user/transactions.html", transactions=txns)
+  page = TransactionService.list_for_user_paginated(
+    g.current_user.id,
+    page=int(request.args.get("page", 1)),
+    per_page=USER_LIST_PER_PAGE,
+  )
+  return render_template(
+    "user/transactions.html",
+    transactions=page.items,
+    pagination=page,
+  )
 
 
 @user_bp.route("/profile")

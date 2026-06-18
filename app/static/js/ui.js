@@ -24,16 +24,39 @@ function initMobileNav() {
   const overlay = document.querySelector(".sidebar-overlay");
   if (!toggle || !sidebar) return;
 
-  const close = () => {
-    sidebar.classList.remove("open");
-    overlay?.classList.remove("open");
+  let scrollLockY = 0;
+
+  const setOpen = (open) => {
+    sidebar.classList.toggle("open", open);
+    overlay?.classList.toggle("open", open);
+    document.body.classList.toggle("nav-open", open);
+
+    if (open) {
+      scrollLockY = window.scrollY;
+      document.body.style.top = `-${scrollLockY}px`;
+    } else {
+      document.body.style.top = "";
+      window.scrollTo(0, scrollLockY);
+    }
   };
 
+  const close = () => setOpen(false);
+
   toggle.addEventListener("click", () => {
-    sidebar.classList.toggle("open");
-    overlay?.classList.toggle("open");
+    setOpen(!sidebar.classList.contains("open"));
   });
+
   overlay?.addEventListener("click", close);
+
+  sidebar.querySelectorAll(".sidebar-link").forEach((link) => {
+    link.addEventListener("click", close);
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && sidebar.classList.contains("open")) {
+      close();
+    }
+  });
 }
 
 function initComboboxes() {
@@ -143,23 +166,130 @@ function initComboboxes() {
 }
 
 function initTransactionDialogs() {
-  const openDialog = (id) => {
-    if (!id) return;
-    const dialog = document.getElementById(id);
-    if (!dialog || typeof dialog.showModal !== "function") return;
-    dialog.showModal();
-    document.body.classList.add("modal-open");
-  };
+  const pageRoot = document.querySelector(".transactions-page[data-bank-import-url]");
+  const urlTemplate = pageRoot?.dataset.bankImportUrl;
+  const dialog = document.getElementById("bank-import-dialog");
+  if (!urlTemplate || !dialog) return;
 
-  const closeDialog = (dialog) => {
-    if (!dialog) return;
+  const titleEl = dialog.querySelector("[data-bank-dialog-title]");
+  const subtitleEl = dialog.querySelector("[data-bank-dialog-subtitle]");
+  const bodyEl = dialog.querySelector("[data-bank-dialog-body]");
+
+  const closeDialog = () => {
     dialog.close();
     document.body.classList.remove("modal-open");
   };
 
+  const badgeHtml = (value) => {
+    if (!value) return "";
+    return `<span class="badge badge-${escapeHtml(value)}">${escapeHtml(value)}</span>`;
+  };
+
+  const detailRow = (label, value, isCode = false) => {
+    const display = value == null || value === "" ? "—" : String(value);
+    const inner = isCode ? `<code>${escapeHtml(display)}</code>` : escapeHtml(display);
+    return `<dt>${escapeHtml(label)}</dt><dd>${inner}</dd>`;
+  };
+
+  const formatMoney = (amount) => {
+    const n = Number(amount);
+    if (Number.isNaN(n)) return "—";
+    return `${n.toFixed(2)} GEL`;
+  };
+
+  const formatDate = (iso) => {
+    if (!iso) return "No date";
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso.slice(0, 10);
+    return d.toISOString().slice(0, 10);
+  };
+
+  const renderBankImport = (data) => {
+    const b = data.bank;
+    const payerName =
+      b.partner_first_name || b.partner_last_name
+        ? [b.partner_first_name, b.partner_last_name].filter(Boolean).join(" ")
+        : b.partner_name || b.partner_name_raw || "—";
+
+    titleEl.textContent = `${formatMoney(b.amount)} ${b.currency || "GEL"}`;
+    const subtitleParts = [formatDate(b.transaction_date || data.created_at)];
+    if (data.user_name) subtitleParts.push(data.user_name);
+    subtitleEl.textContent = subtitleParts.join(" · ");
+
+    bodyEl.innerHTML = `
+      <div class="txn-dialog-badges">
+        ${badgeHtml(b.match_status)}
+        ${badgeHtml(b.match_method)}
+        ${badgeHtml(data.transaction_type)}
+      </div>
+
+      <section class="txn-dialog-section">
+        <h4>Transfer</h4>
+        <dl class="detail-list txn-detail-grid">
+          ${detailRow("Bank transaction ID", b.bank_transaction_id, true)}
+          ${detailRow("Import batch", b.import_batch_id, true)}
+          ${detailRow("Bank type", b.bank_transaction_type)}
+          ${detailRow("Document no.", b.document_number)}
+          ${detailRow("Description", b.description)}
+          ${detailRow("Additional info", b.additional_information)}
+          ${detailRow("Additional description", b.additional_description)}
+        </dl>
+      </section>
+
+      <section class="txn-dialog-section">
+        <h4>Payer</h4>
+        <dl class="detail-list txn-detail-grid">
+          ${detailRow("Name", payerName)}
+          ${detailRow("Tax code", b.partner_tax_code)}
+          ${detailRow("Account", b.partner_account)}
+        </dl>
+      </section>
+
+      <section class="txn-dialog-section">
+        <h4>Matching</h4>
+        <dl class="detail-list txn-detail-grid">
+          ${detailRow("Match hint", b.match_hint)}
+          ${detailRow("Skip reason", b.skip_reason)}
+          ${detailRow("Ledger reference", data.reference, true)}
+          ${
+            data.subscription
+              ? detailRow("Payment reference", data.subscription.payment_reference, true) +
+                detailRow("Door", data.subscription.door_number)
+              : ""
+          }
+        </dl>
+      </section>
+    `;
+  };
+
+  const openBankDetails = async (txnId) => {
+    if (!txnId) return;
+
+    titleEl.textContent = "Loading…";
+    subtitleEl.textContent = "";
+    bodyEl.innerHTML = '<p class="muted">Loading bank import details…</p>';
+
+    dialog.showModal();
+    document.body.classList.add("modal-open");
+
+    const url = urlTemplate.replace("/0/", `/${txnId}/`);
+    try {
+      const res = await fetch(url, { headers: { Accept: "application/json" } });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Could not load bank import details");
+      }
+      renderBankImport(await res.json());
+    } catch (err) {
+      titleEl.textContent = "Bank import";
+      subtitleEl.textContent = "";
+      bodyEl.innerHTML = `<p class="text-danger">${escapeHtml(err.message || "Failed to load details")}</p>`;
+    }
+  };
+
   document.querySelectorAll("[data-open-bank-details]").forEach((el) => {
-    const dialogId = el.dataset.openBankDetails;
-    const open = () => openDialog(dialogId);
+    const txnId = el.dataset.openBankDetails;
+    const open = () => openBankDetails(txnId);
 
     if (el.matches("button")) {
       el.addEventListener("click", (e) => {
@@ -174,20 +304,16 @@ function initTransactionDialogs() {
     }
   });
 
-  document.querySelectorAll(".txn-dialog").forEach((dialog) => {
-    dialog.addEventListener("click", (e) => {
-      if (e.target === dialog) closeDialog(dialog);
-    });
+  dialog.addEventListener("click", (e) => {
+    if (e.target === dialog) closeDialog();
+  });
 
-    dialog.querySelectorAll("[data-close-dialog]").forEach((btn) => {
-      btn.addEventListener("click", () => closeDialog(dialog));
-    });
+  dialog.querySelectorAll("[data-close-dialog]").forEach((btn) => {
+    btn.addEventListener("click", closeDialog);
+  });
 
-    dialog.addEventListener("close", () => {
-      if (!document.querySelector(".txn-dialog[open]")) {
-        document.body.classList.remove("modal-open");
-      }
-    });
+  dialog.addEventListener("close", () => {
+    document.body.classList.remove("modal-open");
   });
 }
 

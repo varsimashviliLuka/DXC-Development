@@ -1,10 +1,11 @@
 {% extends "base.html" %}
 {% from "macros/pagination.html" import render_pagination %}
-{% from "macros/ui.html" import page_header, search_bar, badge, money, phone_fields, user_phones_cell %}
+{% from "macros/ui.html" import page_header, badge, money, phone_fields, user_phones_cell %}
 
 {% block title %}Users — Admin{% endblock %}
 
 {% block content %}
+<div class="users-page">
 {{ page_header("Users", "Register residents and manage accounts.") }}
 
 <section class="panel">
@@ -54,9 +55,45 @@
 </section>
 
 <section class="panel">
-  <div class="panel-header">
-    <h2>All users</h2>
-    {{ search_bar(url_for('admin.users'), "Search ID, phone, name, email...", search_q) }}
+  <div class="panel-header users-list-header">
+    <div>
+      <h2>{% if negative_balance_only %}Users with negative balance{% else %}All users{% endif %}</h2>
+      <p class="muted users-list-count">
+        {{ pagination.total }} user{{ 's' if pagination.total != 1 else '' }}
+        {% if negative_balance_only %} · negative balance{% endif %}
+      </p>
+    </div>
+
+    <form method="get" class="list-toolbar" action="{{ url_for('admin.users') }}">
+      <div class="search-bar list-toolbar-search">
+        <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        <input
+          type="search"
+          name="q"
+          value="{{ search_q }}"
+          placeholder="Search ID, phone, name, email..."
+          class="search-input"
+          aria-label="Search users">
+      </div>
+
+      <div class="list-toolbar-filters">
+        <label class="filter-chip{% if negative_balance_only %} filter-chip-active{% endif %}">
+          <input
+            type="checkbox"
+            name="negative_balance"
+            value="1"
+            class="filter-chip-input"
+            {% if negative_balance_only %}checked{% endif %}
+            onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()">
+          <span class="filter-chip-label">Negative balance</span>
+        </label>
+
+        <button type="submit" class="btn btn-primary btn-sm list-toolbar-apply">Search</button>
+        {% if search_q or negative_balance_only %}
+          <a href="{{ url_for('admin.users') }}" class="btn btn-ghost btn-sm">Clear</a>
+        {% endif %}
+      </div>
+    </form>
   </div>
   <div class="table-wrap">
     <table class="data-table">
@@ -87,11 +124,19 @@
           </td>
         </tr>
         {% else %}
-        <tr><td colspan="6" class="muted">No users found.</td></tr>
+        <tr>
+          <td colspan="6" class="muted">
+            {% if negative_balance_only %}No users with negative balance found.{% else %}No users found.{% endif %}
+            {% if search_q or negative_balance_only %}
+              <a href="{{ url_for('admin.users') }}" class="btn btn-ghost btn-sm">Clear filters</a>
+            {% endif %}
+          </td>
+        </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
-  {{ render_pagination(pagination, 'admin.users', search_q) }}
+  {{ render_pagination(pagination, 'admin.users', params=filter_params) }}
 </section>
+</div>
 {% endblock %}

@@ -5,6 +5,7 @@ import logging
 from app.extensions import db
 from app.models import Building
 from app.utils.errors import NotFoundError
+from app.utils.search import building_search_exprs, filter_by_terms, search_terms
 
 logger = logging.getLogger(__name__)
 
@@ -44,17 +45,10 @@ class BuildingService:
   @staticmethod
   def _buildings_query(search: str | None = None):
     query = Building.query
-    q = (search or "").strip()
-    if q:
-      pattern = f"%{q}%"
-      query = query.filter(
-        db.or_(
-          Building.building_number.ilike(pattern),
-          Building.name.ilike(pattern),
-          Building.address.ilike(pattern),
-        )
-      )
-    return query.order_by(Building.id)
+    terms = search_terms(search)
+    if terms:
+      query = filter_by_terms(query, terms, *building_search_exprs())
+    return query.order_by(Building.building_number.asc(), Building.name.asc())
 
   @staticmethod
   def list_buildings(page: int = 1, per_page: int = 20, search: str | None = None):

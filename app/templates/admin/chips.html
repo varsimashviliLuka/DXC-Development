@@ -1,78 +1,108 @@
 {% extends "base.html" %}
 {% from "macros/pagination.html" import render_pagination %}
-{% from "macros/ui.html" import page_header, search_bar, combobox, badge %}
+{% from "macros/ui.html" import page_header, search_bar, combobox, badge, resident_cell %}
 
 {% block title %}Chips — Admin{% endblock %}
 
 {% block content %}
-{{ page_header("Chips", "Assign and manage physical access chips.") }}
+<div class="chips-page grouped-records-page">
+  {{ page_header("Chips", "Assign and manage physical access chips.") }}
 
-<section class="panel">
-  <h2>Assign new chip</h2>
-  <form method="post" class="form form-grid">
-    <input type="hidden" name="action" value="create">
-    {{ combobox(
-      "user_id",
-      "Resident",
-      url_for("admin_api.search_users"),
-      "Search by ID, phone, or name...",
-      required=true
-    ) }}
-    <div class="form-group">
-      <label for="chip_number">Chip number</label>
-      <input type="text" id="chip_number" name="chip_number" required placeholder="CHIP-001">
-    </div>
-    <div class="form-actions">
-      <button type="submit" class="btn btn-primary">Assign chip</button>
-    </div>
-  </form>
-</section>
+  <section class="panel">
+    <h2>Assign new chip</h2>
+    <form method="post" class="form form-grid">
+      <input type="hidden" name="action" value="create">
+      {{ combobox(
+        "user_id",
+        "Resident",
+        url_for("admin_api.search_users"),
+        "Search by ID, phone, or name...",
+        required=true
+      ) }}
+      <div class="form-group">
+        <label for="chip_number">Chip number</label>
+        <input type="text" id="chip_number" name="chip_number" required placeholder="CHIP-001">
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Assign chip</button>
+      </div>
+    </form>
+  </section>
 
-<section class="panel">
-  <div class="panel-header">
-    <h2>All chips</h2>
-    {{ search_bar(url_for('admin.chips'), "Search chip, phone, ID...", search_q) }}
-  </div>
-  <div class="table-wrap">
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>Chip</th>
-          <th>User</th>
-          <th>Status</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for chip in chips %}
-        <tr>
-          <td><strong>{{ chip.chip_number }}</strong></td>
-          <td>{{ chip.user.id_number if chip.user else chip.user_id }}</td>
-          <td>{{ badge(chip.status) }}</td>
-          <td>
-            <div class="table-actions">
-            {% if chip.status.value == 'active' %}
-            <form method="post" action="{{ url_for('admin.deactivate_chip', chip_id=chip.id) }}" class="inline-form">
-              <button type="submit" class="btn btn-secondary btn-sm">Deactivate</button>
-            </form>
-            {% else %}
-            <form method="post" action="{{ url_for('admin.activate_chip', chip_id=chip.id) }}" class="inline-form">
-              <button type="submit" class="btn btn-primary btn-sm">Activate</button>
-            </form>
-            {% endif %}
-            <form method="post" action="{{ url_for('admin.delete_chip', chip_id=chip.id) }}" class="inline-form"
-                  onsubmit="return confirm('Delete this chip permanently?');">
-              <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-            </form>
+  <section class="panel">
+    <div class="panel-header">
+      <div>
+        <h2>All chips</h2>
+        <p class="muted grouped-records-count">{{ pagination.total }} chip{{ 's' if pagination.total != 1 else '' }}</p>
+      </div>
+      {{ search_bar(url_for('admin.chips'), "Search chip, phone, ID, name...", search_q) }}
+    </div>
+
+    {% if chips %}
+      <div class="resident-groups">
+        {% for group in chips|groupby('user_id') %}
+          {% set user = group.list[0].user %}
+          {% set user_chips = group.list %}
+          <article class="resident-group{% if user_chips|length > 1 %} resident-group-multi{% endif %}">
+            <header class="resident-group-header">
+              <div class="resident-group-resident">
+                {{ resident_cell(user) }}
+              </div>
+              <div class="resident-group-meta">
+                {% if user_chips|length > 1 %}
+                  <span class="badge badge-active resident-count-badge">{{ user_chips|length }} chips</span>
+                {% else %}
+                  <span class="muted resident-count-label">1 chip</span>
+                {% endif %}
+              </div>
+            </header>
+
+            <div class="table-wrap resident-group-table-wrap">
+              <table class="data-table resident-group-table">
+                <thead>
+                  <tr>
+                    <th>Chip</th>
+                    <th>Status</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for chip in user_chips %}
+                  <tr>
+                    <td data-label="Chip"><strong>{{ chip.chip_number }}</strong></td>
+                    <td data-label="Status">{{ badge(chip.status) }}</td>
+                    <td data-label="Actions">
+                      <div class="table-actions">
+                        {% if chip.status.value == 'active' %}
+                        <form method="post" action="{{ url_for('admin.deactivate_chip', chip_id=chip.id) }}" class="inline-form">
+                          <button type="submit" class="btn btn-secondary btn-sm">Deactivate</button>
+                        </form>
+                        {% else %}
+                        <form method="post" action="{{ url_for('admin.activate_chip', chip_id=chip.id) }}" class="inline-form">
+                          <button type="submit" class="btn btn-primary btn-sm">Activate</button>
+                        </form>
+                        {% endif %}
+                        <form method="post" action="{{ url_for('admin.delete_chip', chip_id=chip.id) }}" class="inline-form"
+                              onsubmit="return confirm('Delete this chip permanently?');">
+                          <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
             </div>
-          </td>
-        </tr>
-        {% else %}
-        <tr><td colspan="4" class="muted">No chips found.</td></tr>
+          </article>
         {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {{ render_pagination(pagination, 'admin.chips', search_q) }}
-</section>
+      </div>
+    {% else %}
+      <div class="grouped-records-empty">
+        <p>No chips found.</p>
+      </div>
+    {% endif %}
+
+    {{ render_pagination(pagination, 'admin.chips', search_q) }}
+  </section>
+</div>
 {% endblock %}

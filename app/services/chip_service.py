@@ -2,11 +2,14 @@
 
 import logging
 
+from sqlalchemy.orm import joinedload
+
 from app.enums import ChipStatus
 from app.extensions import db
 from app.models import Chip, User, UserPhone, utcnow
 from app.services.user_service import UserService
 from app.utils.errors import ConflictError, NotFoundError
+from app.utils.search import filter_by_terms, search_terms, user_search_exprs
 from app.utils.validators import validate_chip_number
 
 logger = logging.getLogger(__name__)
@@ -43,19 +46,34 @@ class ChipService:
     return Chip.query.filter_by(user_id=user_id).order_by(Chip.id).all()
 
   @staticmethod
+  def list_for_user_paginated(user_id: int, page: int = 1, per_page: int = 20):
+    return (
+      Chip.query.filter_by(user_id=user_id)
+      .order_by(Chip.chip_number.asc())
+      .paginate(page=page, per_page=per_page, error_out=False)
+    )
+
+  @staticmethod
   def _chips_query(search: str | None = None):
-    query = Chip.query.join(User).outerjoin(UserPhone)
-    q = (search or "").strip()
-    if q:
-      pattern = f"%{q}%"
-      query = query.filter(
-        db.or_(
-          Chip.chip_number.ilike(pattern),
-          User.id_number.ilike(pattern),
-          UserPhone.phone_number.ilike(pattern),
-        )
+    query = (
+      Chip.query.join(User)
+      .outerjoin(UserPhone)
+      .options(joinedload(Chip.user))
+    )
+    terms = search_terms(search)
+    if terms:
+      query = filter_by_terms(
+        query,
+        terms,
+        Chip.chip_number,
+        *user_search_exprs(),
       ).distinct()
-    return query.order_by(Chip.id)
+    return query.order_by(
+      User.last_name.asc(),
+      User.first_name.asc(),
+      User.id_number.asc(),
+      Chip.chip_number.asc(),
+    )
 
   @staticmethod
   def list_all(page: int = 1, per_page: int = 20, search: str | None = None):
