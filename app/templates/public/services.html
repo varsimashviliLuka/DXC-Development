@@ -1,0 +1,31 @@
+{% extends "public/base.html" %}
+
+{% block title %}{{ t('services.title') }} — {{ company.name }}{% endblock %}
+
+{% block content %}
+<section class="public-page-header">
+  <div class="public-container">
+    <h1>{{ t('services.title') }}</h1>
+    <p class="public-lead">{{ t('services.subtitle') }}</p>
+  </div>
+</section>
+
+<section class="public-section">
+  <div class="public-container public-service-list">
+    {% for key in services %}
+    <article class="public-service" id="{{ key }}">
+      <div>
+        <h2>{{ t('service.' ~ key ~ '.title') }}</h2>
+        <p>{{ t('service.' ~ key ~ '.summary') }}</p>
+        <a href="{{ url_for('main.contact', service=key) }}" class="btn btn-primary btn-sm">{{ t('services.request') }}</a>
+      </div>
+      <ul class="public-checklist">
+        {% for item in t('service.' ~ key ~ '.details') %}
+        <li>{{ item }}</li>
+        {% endfor %}
+      </ul>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% from "macros/ui.html" import page_header, money, badge %}
+
+{% block title %}{{ t('user.pay.title') }}{% endblock %}
+
+{% block content %}
+{{ page_header(t('user.pay.title'), t('user.pay.subtitle')) }}
+
+<section class="panel">
+  <h2>{{ t('user.pay.accounts') }}</h2>
+  {% if bank_recipient_name %}
+  <p><strong>{{ t('user.pay.recipient') }}:</strong> {{ bank_recipient_name }}</p>
+  {% endif %}
+  {% if bank_accounts %}
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>{{ t('user.pay.bank') }}</th>
+          <th>{{ t('user.pay.iban') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for account in bank_accounts %}
+        <tr>
+          <td>{{ account.bank_name }}</td>
+          <td><code>{{ account.iban }}</code></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="muted">{{ t('user.pay.no_banks') }}</p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>{{ t('user.pay.your_refs') }}</h2>
+  <p class="muted">{{ t('user.pay.refs_help') }}</p>
+  {% if subscriptions %}
+  <p>{{ t('user.pay.example', code=subscriptions[0].payment_reference or '350012A') }}</p>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>{{ t('col.building') }}</th>
+          <th>{{ t('col.door') }}</th>
+          <th>{{ t('col.payment_reference') }}</th>
+          <th>{{ t('col.monthly_fee') }}</th>
+          <th>{{ t('col.status') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sub in subscriptions %}
+        <tr>
+          <td>{{ sub.building.name if sub.building else sub.building_id }}</td>
+          <td>{{ sub.door_number }}</td>
+          <td><code>{{ sub.payment_reference or '—' }}</code></td>
+          <td>{{ money(sub.monthly_fee) }}</td>
+          <td>{{ badge(sub.status) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="muted">{{ t('user.pay.empty') }}</p>
+  {% endif %}
+  <p class="muted">{{ t('user.pay.fallback') }}</p>
+</section>
+{% endblock %}

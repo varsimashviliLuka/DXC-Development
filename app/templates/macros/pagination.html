@@ -1,23 +1,23 @@
 {% macro render_pagination(pagination, endpoint, q=None, params=None) %}
   {% if pagination.pages > 1 %}
-  <nav class="pagination" aria-label="Pagination">
+  <nav class="pagination" aria-label="{{ t('common.page_of', page=pagination.page, pages=pagination.pages, total=pagination.total) }}">
     {% if pagination.has_prev %}
       {% if params %}
-        <a class="btn btn-ghost btn-sm" href="{{ url_for(endpoint, page=pagination.prev_num, **params) }}">Previous</a>
+        <a class="btn btn-ghost btn-sm" href="{{ url_for(endpoint, page=pagination.prev_num, **params) }}">{{ t('common.previous') }}</a>
       {% elif q %}
-        <a class="btn btn-ghost btn-sm" href="{{ url_for(endpoint, page=pagination.prev_num, q=q) }}">Previous</a>
+        <a class="btn btn-ghost btn-sm" href="{{ url_for(endpoint, page=pagination.prev_num, q=q) }}">{{ t('common.previous') }}</a>
       {% else %}
-        <a class="btn btn-ghost btn-sm" href="{{ url_for(endpoint, page=pagination.prev_num) }}">Previous</a>
+        <a class="btn btn-ghost btn-sm" href="{{ url_for(endpoint, page=pagination.prev_num) }}">{{ t('common.previous') }}</a>
       {% endif %}
     {% endif %}
-    <span class="pagination-info">Page {{ pagination.page }} of {{ pagination.pages }} · {{ pagination.total }} total</span>
+    <span class="pagination-info">{{ t('common.page_of', page=pagination.page, pages=pagination.pages, total=pagination.total) }}</span>
     {% if pagination.has_next %}
       {% if params %}
-        <a class="btn btn-ghost btn-sm" href="{{ url_for(endpoint, page=pagination.next_num, **params) }}">Next</a>
+        <a class="btn btn-ghost btn-sm" href="{{ url_for(endpoint, page=pagination.next_num, **params) }}">{{ t('common.next') }}</a>
       {% elif q %}
-        <a class="btn btn-ghost btn-sm" href="{{ url_for(endpoint, page=pagination.next_num, q=q) }}">Next</a>
+        <a class="btn btn-ghost btn-sm" href="{{ url_for(endpoint, page=pagination.next_num, q=q) }}">{{ t('common.next') }}</a>
       {% else %}
-        <a class="btn btn-ghost btn-sm" href="{{ url_for(endpoint, page=pagination.next_num) }}">Next</a>
+        <a class="btn btn-ghost btn-sm" href="{{ url_for(endpoint, page=pagination.next_num) }}">{{ t('common.next') }}</a>
       {% endif %}
     {% endif %}
   </nav>

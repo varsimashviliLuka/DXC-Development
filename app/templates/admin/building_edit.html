@@ -4,10 +4,11 @@
 {% block title %}Edit Building — Admin{% endblock %}
 
 {% block content %}
-{{ page_header("Edit building", "Update building registry details.") }}
+{{ page_header(t('admin.buildings.edit'), t('admin.buildings.edit_sub')) }}
 
 <section class="panel">
   <form method="post" id="edit-building-form" class="form form-grid">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="form-group">
       <label for="building_number">Building number</label>
       <input type="text" id="building_number" name="building_number" required

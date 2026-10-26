@@ -4,7 +4,7 @@ import logging
 
 from app.extensions import db
 from app.models import Building
-from app.utils.errors import NotFoundError
+from app.utils.errors import ConflictError, NotFoundError
 from app.utils.search import building_search_exprs, filter_by_terms, search_terms
 
 logger = logging.getLogger(__name__)
@@ -101,9 +101,11 @@ class BuildingService:
       sub.id for sub in Subscription.query.filter_by(building_id=building.id).all()
     ]
     if subscription_ids:
-      Transaction.query.filter(
-        Transaction.subscription_id.in_(subscription_ids)
-      ).delete(synchronize_session=False)
+      if Transaction.query.filter(Transaction.subscription_id.in_(subscription_ids)).first():
+        raise ConflictError(
+          "Subscriptions in this building have payment history, so it cannot be deleted. "
+          "Set those subscriptions to inactive instead."
+        )
       Subscription.query.filter(
         Subscription.id.in_(subscription_ids)
       ).delete(synchronize_session=False)

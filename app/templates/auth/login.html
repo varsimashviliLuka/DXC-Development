@@ -1,31 +1,35 @@
-{% extends "base.html" %}
+{% extends "public/base.html" %}
 
-{% block title %}Sign in — {{ app_name }}{% endblock %}
+{% block title %}{{ t('login.title') }} — {{ company.name }}{% endblock %}
 
 {% block content %}
 <div class="auth-page">
   <section class="panel auth-card">
     <header class="page-header">
       <div>
-        <h1>Welcome back</h1>
-        <p class="page-subtitle">Sign in with your 11-digit ID number and password.</p>
+        <h1>{{ t('login.title') }}</h1>
+        <p class="page-subtitle">{{ t('login.subtitle') }}</p>
       </div>
     </header>
 
     <form method="post" class="form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="form-group">
-        <label for="id_number">ID number</label>
+        <label for="id_number">{{ t('login.id_number') }}</label>
         <input type="text" id="id_number" name="id_number" required
                inputmode="numeric" pattern="\d{11}" maxlength="11" minlength="11"
-               placeholder="01124096118"
+               autocomplete="username" placeholder="01124096118"
                value="{{ request.form.get('id_number', '') }}">
       </div>
       <div class="form-group">
-        <label for="password">Password</label>
+        <label for="password">{{ t('login.password') }}</label>
         <input type="password" id="password" name="password" required autocomplete="current-password">
       </div>
-      <button type="submit" class="btn btn-primary btn-block">Sign in</button>
+      <button type="submit" class="btn btn-primary btn-block">{{ t('login.submit') }}</button>
     </form>
+    <p class="muted form-hint">
+      <a href="{{ url_for('main.contact') }}">{{ t('login.forgot') }}</a>
+    </p>
   </section>
 </div>
 {% endblock %}

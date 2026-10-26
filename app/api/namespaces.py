@@ -1,6 +1,7 @@
 """RESTX API namespaces."""
 
-from flask import g
+from flask import current_app, g, request
+from flask_limiter.util import get_remote_address
 from flask_restx import Namespace, Resource, fields
 from werkzeug.datastructures import FileStorage
 
@@ -112,9 +113,23 @@ csv_upload_parser.add_argument(
   help="Georgian bank statement CSV export (TBC/BoG format)",
 )
 
+def _page_number(value):
+  return max(1, int(value))
+
+
+def _bounded_per_page(value):
+  return max(1, min(int(value), current_app.config["API_MAX_PER_PAGE"]))
+
+
+def _login_account_key():
+  payload = request.get_json(silent=True) or {}
+  id_number = str(payload.get("id_number") or "").strip()
+  return f"api-login-account:{id_number}" if id_number else f"api-login-ip:{get_remote_address()}"
+
+
 pagination_parser = users_ns.parser()
-pagination_parser.add_argument("page", type=int, default=1, location="args")
-pagination_parser.add_argument("per_page", type=int, default=20, location="args")
+pagination_parser.add_argument("page", type=_page_number, default=1, location="args")
+pagination_parser.add_argument("per_page", type=_bounded_per_page, default=20, location="args")
 
 
 def _handle_errors(fn):
@@ -137,7 +152,12 @@ def _handle_errors(fn):
 
 @auth_ns.route("/login")
 class LoginResource(Resource):
-  @limiter.limit("10 per minute")
+  @limiter.limit(lambda: current_app.config["LOGIN_RATE_LIMIT_PER_IP"])
+  @limiter.limit(
+    lambda: current_app.config["LOGIN_RATE_LIMIT_PER_ACCOUNT"],
+    key_func=_login_account_key,
+    deduct_when=lambda response: response.status_code != 200,
+  )
   @_handle_errors
   @auth_ns.expect(login_model, validate=True)
   @auth_ns.marshal_with(token_response)

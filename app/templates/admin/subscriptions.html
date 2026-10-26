@@ -6,11 +6,12 @@
 
 {% block content %}
 <div class="subscriptions-page grouped-records-page">
-  {{ page_header("Subscriptions", "Door-level billing subscriptions for residents.") }}
+  {{ page_header(t('admin.subs.title'), t('admin.subs.subtitle')) }}
 
   <section class="panel">
     <h2>Create subscription</h2>
     <form method="post" class="form form-grid">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       {{ combobox(
         "user_id",
         "Resident",
@@ -91,7 +92,7 @@
               value="1"
               class="filter-chip-input"
               {% if overdue_only %}checked{% endif %}
-              onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()">
+              data-autosubmit>
             <span class="filter-chip-label">Overdue only</span>
           </label>
 
@@ -154,7 +155,8 @@
                     <td data-label="Actions" class="table-actions">
                       <a href="{{ url_for('admin.edit_subscription', subscription_id=sub.id) }}" class="btn btn-ghost btn-sm">Edit</a>
                       <form method="post" action="{{ url_for('admin.delete_subscription', subscription_id=sub.id) }}" class="inline-form"
-                            onsubmit="return confirm('Delete this subscription permanently?');">
+                            data-confirm="Delete this subscription permanently?">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-danger btn-sm">Delete</button>
                       </form>
                     </td>

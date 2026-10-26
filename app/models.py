@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from app.enums import (
   ChipStatus,
   ImportMatchStatus,
+  InquiryStatus,
   PaymentMatchMethod,
   SubscriptionStatus,
   TransactionStatus,
@@ -42,6 +43,8 @@ class User(TimestampMixin, db.Model):
   first_name = db.Column(db.String(100))
   last_name = db.Column(db.String(100))
   admin_comment = db.Column(db.Text, nullable=True)
+  # Bumped to invalidate every existing session cookie and JWT for this user.
+  auth_version = db.Column(db.Integer, nullable=False, default=0, server_default="0")
 
   phones = db.relationship(
     "UserPhone",
@@ -71,6 +74,14 @@ class User(TimestampMixin, db.Model):
 
   def is_admin(self):
     return self.role == UserRole.ADMIN
+
+  def revoke_sessions(self) -> None:
+    self.auth_version = (self.auth_version or 0) + 1
+
+  def adjust_balance(self, delta) -> None:
+    """Change the balance in one SQL statement so concurrent payments and fees can't overwrite each other."""
+    self.balance = User.balance + delta
+    db.session.flush()
 
   @property
   def primary_phone(self) -> str | None:
@@ -193,6 +204,8 @@ class Subscription(TimestampMixin, db.Model):
     default=SubscriptionStatus.ACTIVE,
   )
   next_payment_due = db.Column(db.Date, nullable=True)
+  # Day of month fees fall on; keeps a 31st due date from drifting to the 28th after February.
+  billing_day = db.Column(db.SmallInteger, nullable=True)
   admin_comment = db.Column(db.Text, nullable=True)
 
   user = db.relationship("User", back_populates="subscriptions")
@@ -382,3 +395,26 @@ class BankImport(TimestampMixin, db.Model):
       "skip_reason": self.skip_reason,
       "created_at": self.created_at.isoformat() if self.created_at else None,
     }
+
+
+class Inquiry(TimestampMixin, db.Model):
+  """Service request or question submitted through the public contact form."""
+
+  __tablename__ = "inquiries"
+
+  id = db.Column(db.Integer, primary_key=True)
+  name = db.Column(db.String(100), nullable=False)
+  phone = db.Column(db.String(20), nullable=False)
+  email = db.Column(db.String(255), nullable=True)
+  service = db.Column(db.String(50), nullable=False)
+  message = db.Column(db.Text, nullable=False)
+  language = db.Column(db.String(5), nullable=False, default="ka")
+  status = db.Column(
+    db.Enum(InquiryStatus),
+    nullable=False,
+    default=InquiryStatus.NEW,
+    index=True,
+  )
+  admin_note = db.Column(db.Text, nullable=True)
+  ip_address = db.Column(db.String(45), nullable=True)
+  notified_at = db.Column(db.DateTime(timezone=True), nullable=True)

@@ -4,7 +4,7 @@
 {% block title %}Unmatched Payments — Admin{% endblock %}
 
 {% block content %}
-{{ page_header("Unmatched payments", "Review incoming bank transfers that could not be matched automatically.") }}
+{{ page_header(t('admin.unmatched.title'), t('admin.unmatched.subtitle')) }}
 
 {% if records %}
   {% for record in records %}
@@ -33,6 +33,7 @@
 
     <div class="action-row">
       <form method="post" action="{{ url_for('admin.assign_unmatched_payment', import_id=record.id) }}" class="form form-grid">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         {{ combobox(
           "user_id",
           "Assign to existing user",
@@ -49,6 +50,7 @@
     <details class="create-user-details">
       <summary>Create new user from this payment</summary>
       <form method="post" action="{{ url_for('admin.create_user_from_payment', import_id=record.id) }}" class="form form-grid">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <p class="muted form-group-full">
           ID number from bank: <strong>{{ record.partner_tax_code }}</strong>
           {% if record.partner_first_name %} · Name: {{ record.partner_first_name }} {{ record.partner_last_name or '' }}{% endif %}

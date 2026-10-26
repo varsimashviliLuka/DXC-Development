@@ -1,22 +1,22 @@
 {% extends "base.html" %}
 {% from "macros/ui.html" import page_header, badge, money %}
 
-{% block title %}Admin Dashboard{% endblock %}
+{% block title %}{{ t('admin.dash.title') }}{% endblock %}
 
 {% block content %}
-{{ page_header("Dashboard", "Overview of users, payments, and recent activity.") }}
+{{ page_header(t('admin.dash.title'), t('admin.dash.subtitle')) }}
 
 <div class="stats-grid">
   <div class="stat-card">
-    <span class="stat-label">Users</span>
+    <span class="stat-label">{{ t('admin.dash.users') }}</span>
     <span class="stat-value">{{ users_count }}</span>
   </div>
   <div class="stat-card">
-    <span class="stat-label">Buildings</span>
+    <span class="stat-label">{{ t('admin.dash.buildings') }}</span>
     <span class="stat-value">{{ buildings_count }}</span>
   </div>
   <div class="stat-card {% if unmatched_count > 0 %}stat-card-warning{% endif %}">
-    <span class="stat-label">Unmatched payments</span>
+    <span class="stat-label">{{ t('admin.dash.unmatched') }}</span>
     <span class="stat-value">{{ unmatched_count }}</span>
   </div>
 </div>
@@ -24,10 +24,10 @@
 {% if unmatched_count > 0 %}
 <section class="panel panel-warning">
   <div class="panel-header">
-    <h2>Unmatched bank payments</h2>
-    <a href="{{ url_for('admin.unmatched_payments') }}" class="btn btn-secondary btn-sm">Review all</a>
+    <h2>{{ t('admin.dash.unmatched_heading') }}</h2>
+    <a href="{{ url_for('admin.unmatched_payments') }}" class="btn btn-secondary btn-sm">{{ t('admin.dash.review') }}</a>
   </div>
-  <p class="muted">These incoming payments could not be linked to a registered user.</p>
+  <p class="muted">{{ t('admin.dash.unmatched_help') }}</p>
   <div class="table-wrap">
     <table class="data-table">
       <thead>

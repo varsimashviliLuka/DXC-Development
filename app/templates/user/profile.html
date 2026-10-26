@@ -1,22 +1,22 @@
 {% extends "base.html" %}
 {% from "macros/ui.html" import page_header, money, badge, user_phones_cell %}
 
-{% block title %}Profile{% endblock %}
+{% block title %}{{ t('user.profile.title') }}{% endblock %}
 
 {% block content %}
-{{ page_header("Profile", "Your account details.") }}
+{{ page_header(t('user.profile.title'), t('user.profile.subtitle')) }}
 
 <section class="panel user-profile-panel">
   <dl class="detail-list">
-    <dt>ID number</dt><dd class="detail-list-value"><strong>{{ user.id_number }}</strong></dd>
-    <dt>Phone numbers</dt><dd class="detail-list-value">{{ user_phones_cell(user, show_labels=false) }}</dd>
-    <dt>Email</dt><dd class="detail-list-value detail-list-value-break">{{ user.email or '—' }}</dd>
-    <dt>Name</dt><dd class="detail-list-value">{{ user.first_name or '' }} {{ user.last_name or '' }}</dd>
-    <dt>Balance</dt><dd class="detail-list-value">{{ money(user.balance, 'text-success' if user.balance >= 0 else 'text-danger') }}</dd>
-    <dt>Status</dt><dd class="detail-list-value">{{ badge(user.status) }}</dd>
+    <dt>{{ t('field.id_number') }}</dt><dd class="detail-list-value"><strong>{{ user.id_number }}</strong></dd>
+    <dt>{{ t('field.phones') }}</dt><dd class="detail-list-value">{{ user_phones_cell(user, show_labels=false) }}</dd>
+    <dt>{{ t('field.email') }}</dt><dd class="detail-list-value detail-list-value-break">{{ user.email or '—' }}</dd>
+    <dt>{{ t('field.name') }}</dt><dd class="detail-list-value">{{ user.first_name or '' }} {{ user.last_name or '' }}</dd>
+    <dt>{{ t('field.balance') }}</dt><dd class="detail-list-value">{{ money(user.balance, 'text-success' if user.balance >= 0 else 'text-danger') }}</dd>
+    <dt>{{ t('field.status') }}</dt><dd class="detail-list-value">{{ badge(user.status) }}</dd>
   </dl>
   <div class="form-actions">
-    <a href="{{ url_for('user.password') }}" class="btn btn-secondary">Change password</a>
+    <a href="{{ url_for('user.password') }}" class="btn btn-secondary">{{ t('user.profile.change_password') }}</a>
   </div>
 </section>
 {% endblock %}

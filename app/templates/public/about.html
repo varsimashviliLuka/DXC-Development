@@ -1,0 +1,25 @@
+{% extends "public/base.html" %}
+
+{% block title %}{{ t('about.title') }} — {{ company.name }}{% endblock %}
+
+{% block content %}
+<section class="public-page-header">
+  <div class="public-container">
+    <h1>{{ t('about.title') }}</h1>
+    <p class="public-lead">{{ t('about.intro') }}</p>
+  </div>
+</section>
+
+<section class="public-section">
+  <div class="public-container public-prose">
+    <p>{{ t('about.body') }}</p>
+    <h2>{{ t('about.values_title') }}</h2>
+    <ul class="public-checklist">
+      {% for item in t('about.values') %}
+      <li>{{ item }}</li>
+      {% endfor %}
+    </ul>
+    <p><a href="{{ url_for('main.contact') }}" class="btn btn-primary">{{ t('home.cta_primary') }}</a></p>
+  </div>
+</section>
+{% endblock %}

@@ -2,16 +2,16 @@
 {% from "macros/pagination.html" import render_pagination %}
 {% from "macros/ui.html" import page_header, badge %}
 
-{% block title %}My Chips{% endblock %}
+{% block title %}{{ t('user.chips.title') }}{% endblock %}
 
 {% block content %}
-{{ page_header("My chips", "Physical access chips assigned to your account.") }}
+{{ page_header(t('user.chips.title'), t('user.chips.subtitle')) }}
 
 <section class="panel">
   <div class="panel-header user-list-header">
     <div>
-      <h2>Your chips</h2>
-      <p class="muted user-list-count">{{ pagination.total }} chip{{ 's' if pagination.total != 1 else '' }}</p>
+      <h2>{{ t('user.chips.heading') }}</h2>
+      <p class="muted user-list-count">{{ t('user.chips.count', n=pagination.total) }}</p>
     </div>
   </div>
 
@@ -20,19 +20,19 @@
     <table class="data-table user-records-table">
       <thead>
         <tr>
-          <th>Chip number</th>
-          <th>Status</th>
-          <th>Assigned</th>
-          <th>Deactivated</th>
+          <th>{{ t('col.chip') }}</th>
+          <th>{{ t('col.status') }}</th>
+          <th>{{ t('col.assigned') }}</th>
+          <th>{{ t('col.deactivated') }}</th>
         </tr>
       </thead>
       <tbody>
         {% for chip in chips %}
         <tr>
-          <td data-label="Chip"><strong>{{ chip.chip_number }}</strong></td>
-          <td data-label="Status">{{ badge(chip.status) }}</td>
-          <td data-label="Assigned">{{ chip.created_at.strftime('%Y-%m-%d') if chip.created_at else '—' }}</td>
-          <td data-label="Deactivated">{{ chip.deactivated_at.strftime('%Y-%m-%d') if chip.deactivated_at else '—' }}</td>
+          <td data-label="{{ t('col.chip') }}"><strong>{{ chip.chip_number }}</strong></td>
+          <td data-label="{{ t('col.status') }}">{{ badge(chip.status) }}</td>
+          <td data-label="{{ t('col.assigned') }}">{{ chip.created_at.strftime('%Y-%m-%d') if chip.created_at else '—' }}</td>
+          <td data-label="{{ t('col.deactivated') }}">{{ chip.deactivated_at.strftime('%Y-%m-%d') if chip.deactivated_at else '—' }}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -40,7 +40,7 @@
   </div>
   {{ render_pagination(pagination, 'user.chips') }}
   {% else %}
-  <p class="muted">You have no chips assigned.</p>
+  <p class="muted">{{ t('user.chips.empty') }}</p>
   {% endif %}
 </section>
 {% endblock %}

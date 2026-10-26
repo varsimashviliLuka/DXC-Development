@@ -1,5 +1,5 @@
 <aside class="sidebar">
-  <a href="{{ url_for('main.index') }}" class="sidebar-brand">
+  <a href="{{ url_for('main.account') }}" class="sidebar-brand">
     <span class="sidebar-brand-mark">{{ app_name }}</span>
     <span class="sidebar-brand-text">
       <span class="sidebar-brand-byline">{{ app_name_full }}</span>
@@ -8,34 +8,46 @@
 
   <div class="sidebar-scroll">
     {% if current_user.is_admin() %}
-    <div class="sidebar-section">Admin</div>
+    <div class="sidebar-section">{{ t('nav.admin') }}</div>
     <nav class="sidebar-nav">
-      <a href="{{ url_for('admin.dashboard') }}" class="sidebar-link{% if request.endpoint == 'admin.dashboard' %} active{% endif %}">Dashboard</a>
-      <a href="{{ url_for('admin.users') }}" class="sidebar-link{% if request.endpoint == 'admin.users' %} active{% endif %}">Users</a>
-      <a href="{{ url_for('admin.buildings') }}" class="sidebar-link{% if request.endpoint == 'admin.buildings' %} active{% endif %}">Buildings</a>
-      <a href="{{ url_for('admin.subscriptions') }}" class="sidebar-link{% if request.endpoint == 'admin.subscriptions' %} active{% endif %}">Subscriptions</a>
-      <a href="{{ url_for('admin.chips') }}" class="sidebar-link{% if request.endpoint == 'admin.chips' %} active{% endif %}">Chips</a>
-      <a href="{{ url_for('admin.transactions') }}" class="sidebar-link{% if request.endpoint == 'admin.transactions' %} active{% endif %}">Transactions</a>
-      <a href="{{ url_for('admin.logs') }}" class="sidebar-link{% if request.endpoint == 'admin.logs' %} active{% endif %}">Logs</a>
-      <a href="{{ url_for('admin.import_payments') }}" class="sidebar-link{% if request.endpoint == 'admin.import_payments' %} active{% endif %}">Import payments</a>
-      <a href="{{ url_for('admin.unmatched_payments') }}" class="sidebar-link{% if request.endpoint == 'admin.unmatched_payments' %} active{% endif %}">Unmatched</a>
+      <a href="{{ url_for('admin.dashboard') }}" class="sidebar-link{% if request.endpoint == 'admin.dashboard' %} active{% endif %}">{{ t('nav.admin.dashboard') }}</a>
+      <a href="{{ url_for('admin.users') }}" class="sidebar-link{% if request.endpoint == 'admin.users' %} active{% endif %}">{{ t('nav.admin.users') }}</a>
+      <a href="{{ url_for('admin.buildings') }}" class="sidebar-link{% if request.endpoint == 'admin.buildings' %} active{% endif %}">{{ t('nav.admin.buildings') }}</a>
+      <a href="{{ url_for('admin.subscriptions') }}" class="sidebar-link{% if request.endpoint == 'admin.subscriptions' %} active{% endif %}">{{ t('nav.admin.subscriptions') }}</a>
+      <a href="{{ url_for('admin.chips') }}" class="sidebar-link{% if request.endpoint == 'admin.chips' %} active{% endif %}">{{ t('nav.admin.chips') }}</a>
+      <a href="{{ url_for('admin.transactions') }}" class="sidebar-link{% if request.endpoint == 'admin.transactions' %} active{% endif %}">{{ t('nav.admin.transactions') }}</a>
+      <a href="{{ url_for('admin.logs') }}" class="sidebar-link{% if request.endpoint == 'admin.logs' %} active{% endif %}">{{ t('nav.admin.logs') }}</a>
+      <a href="{{ url_for('admin.import_payments') }}" class="sidebar-link{% if request.endpoint == 'admin.import_payments' %} active{% endif %}">{{ t('nav.admin.import') }}</a>
+      <a href="{{ url_for('admin.unmatched_payments') }}" class="sidebar-link{% if request.endpoint == 'admin.unmatched_payments' %} active{% endif %}">{{ t('nav.admin.unmatched') }}</a>
+      <a href="{{ url_for('admin.inquiries') }}" class="sidebar-link{% if request.endpoint in ['admin.inquiries', 'admin.inquiry_detail'] %} active{% endif %}">
+        {{ t('nav.admin.inquiries') }}{% if new_inquiry_count %} <span class="sidebar-count">{{ new_inquiry_count }}</span>{% endif %}
+      </a>
     </nav>
     {% else %}
-    <div class="sidebar-section">My account</div>
+    <div class="sidebar-section">{{ t('nav.user.section') }}</div>
     <nav class="sidebar-nav">
-      <a href="{{ url_for('user.dashboard') }}" class="sidebar-link{% if request.endpoint == 'user.dashboard' %} active{% endif %}">Dashboard</a>
-      <a href="{{ url_for('user.subscriptions') }}" class="sidebar-link{% if request.endpoint == 'user.subscriptions' %} active{% endif %}">Subscriptions</a>
-      <a href="{{ url_for('user.chips') }}" class="sidebar-link{% if request.endpoint == 'user.chips' %} active{% endif %}">Chips</a>
-      <a href="{{ url_for('user.transactions') }}" class="sidebar-link{% if request.endpoint == 'user.transactions' %} active{% endif %}">Transactions</a>
-      <a href="{{ url_for('user.profile') }}" class="sidebar-link{% if request.endpoint in ['user.profile', 'user.password'] %} active{% endif %}">Profile</a>
+      <a href="{{ url_for('user.dashboard') }}" class="sidebar-link{% if request.endpoint == 'user.dashboard' %} active{% endif %}">{{ t('nav.user.dashboard') }}</a>
+      <a href="{{ url_for('user.pay') }}" class="sidebar-link{% if request.endpoint == 'user.pay' %} active{% endif %}">{{ t('nav.user.pay') }}</a>
+      <a href="{{ url_for('user.subscriptions') }}" class="sidebar-link{% if request.endpoint == 'user.subscriptions' %} active{% endif %}">{{ t('nav.user.subscriptions') }}</a>
+      <a href="{{ url_for('user.chips') }}" class="sidebar-link{% if request.endpoint == 'user.chips' %} active{% endif %}">{{ t('nav.user.chips') }}</a>
+      <a href="{{ url_for('user.transactions') }}" class="sidebar-link{% if request.endpoint == 'user.transactions' %} active{% endif %}">{{ t('nav.user.transactions') }}</a>
+      <a href="{{ url_for('user.profile') }}" class="sidebar-link{% if request.endpoint in ['user.profile', 'user.password'] %} active{% endif %}">{{ t('nav.user.profile') }}</a>
     </nav>
     {% endif %}
   </div>
 
   <div class="sidebar-footer">
+    <div class="sidebar-lang" aria-label="{{ t('nav.language') }}">
+      {% for code, name in LANGUAGES.items() %}
+      <a href="{{ url_for('main.set_language', code=code, next=request.full_path) }}"
+         class="sidebar-lang-link{% if code == lang %} active{% endif %}" hreflang="{{ code }}" lang="{{ code }}">{{ code | upper }}</a>
+      {% endfor %}
+    </div>
+    <a href="{{ url_for('main.index') }}" class="sidebar-link">{{ t('common.view_website') }}</a>
     <div class="sidebar-user">{{ current_user.id_number }}</div>
     <form action="{{ url_for('auth.logout') }}" method="post">
-      <button type="submit" class="btn btn-ghost btn-sm btn-block sidebar-signout">Sign out</button>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-ghost btn-sm btn-block sidebar-signout">{{ t('common.sign_out') }}</button>
     </form>
   </div>
 </aside>

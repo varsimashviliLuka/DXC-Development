@@ -28,16 +28,20 @@ python run.py
 
 API docs: [http://localhost:5000/api/v1/docs](http://localhost:5000/api/v1/docs)
 
-Web UI: [http://localhost:5000/](http://localhost:5000/) (login page at `/auth/login`)
+Web UI: [http://localhost:5000/](http://localhost:5000/) (public site; login at `/auth/login`)
 
-Default admin (change in `.env`):
+The admin account is seeded on first startup from `ADMIN_ID_NUMBER` / `ADMIN_PASSWORD` in `.env`
+and logs in with that 11-digit ID number. Changing `ADMIN_PASSWORD` later does not update an
+existing admin; change it from the profile page instead.
 
-| Field    | Default value        |
-|----------|----------------------|
-| Phone    | `+995591000001`      |
-| Password | `ChangeMeAdmin123!`  |
+## Database migrations
 
-> **Note:** If upgrading from an earlier schema, delete `elevator_chip.db` or run migrations so new tables/columns are created.
+The schema is managed by Flask-Migrate (Alembic) in `migrations/`. The `flask` CLI finds the app via `wsgi.py`.
+
+- **Development:** pending migrations are applied automatically on startup (`AUTO_MIGRATE=true`).
+- **Production:** run `flask db upgrade` before starting the app; it refuses to start with pending migrations.
+- **Changing a model:** `flask db migrate -m "describe change"`, review the generated file, then `flask db upgrade`.
+- Databases created before migrations existed are detected on startup, brought to the baseline schema, and stamped automatically.
 
 ## Web frontend (Jinja templates)
 
@@ -45,9 +49,10 @@ Session-based UI alongside the REST API:
 
 | URL | Role | Pages |
 |-----|------|-------|
-| `/auth/login` | Public | Login |
-| `/admin/*` | Admin | Dashboard, users, buildings, subscriptions, chips, CSV import |
-| `/dashboard/*` | User | Dashboard, subscriptions, chips, transactions, profile, password |
+| `/`, `/services`, `/about`, `/contact` | Public | Landing, services, about, contact form (Georgian + English) |
+| `/auth/login` | Public | Login (personal ID number). Forgotten passwords: contact us, admin resets. |
+| `/admin/*` | Admin | Dashboard, users, buildings, subscriptions, chips, CSV import, inquiries |
+| `/dashboard/*` | User | Dashboard, how to pay, subscriptions, chips, transactions, profile, password |
 
 Structure:
 
@@ -63,7 +68,7 @@ The web layer reuses the same service classes as the API (no duplicate business 
 | Method | Endpoint | Access | Description |
 |--------|----------|--------|-------------|
 | GET | `/api/v1/health` | Public | Health check |
-| POST | `/api/v1/auth/login` | Public | Login with phone + password |
+| POST | `/api/v1/auth/login` | Public | Login with ID number + password |
 | GET | `/api/v1/auth/me` | Auth | Current user |
 | POST | `/api/v1/users` | Admin | Register user |
 | POST | `/api/v1/buildings` | Admin | Create building |
@@ -126,8 +131,21 @@ If no user matches, the payment appears on the admin dashboard under **Unmatched
 
 When `SCHEDULER_ENABLED=true`:
 
-- **Daily 02:00 UTC** — process subscriptions due today: charge fee, update balance, mark overdue if needed
+- **Daily 02:00 UTC, and 30 seconds after startup** — charge every billing period due on or before today, update balance, mark overdue if needed. Months missed while the server was down are caught up one at a time.
 - **Every 30 minutes** — scheduler heartbeat
+
+Safety guarantees:
+
+- Each fee has the reference `FEE-<subscription id>-<due date>`, which is unique in the database, so a period is never charged twice (even if the due date is moved back by hand).
+- Only one process per machine runs the scheduler (file lock in `instance/scheduler.lock`), so gunicorn workers and the debug reloader don't multiply charges.
+- Fees keep their original day of month: a subscription due on the 31st bills on Feb 28 and then on Mar 31 again.
+- Balances change with a single SQL `balance = balance + amount`, so a fee and a payment arriving at the same time can't overwrite each other.
+
+## Deleting records
+
+Users, subscriptions, and buildings with payment history cannot be deleted; set the status to
+inactive instead so the ledger stays complete. Records without any transactions (e.g. created by
+mistake) can still be deleted.
 
 ## Tests
 
@@ -137,9 +155,21 @@ pytest
 
 ## Production checklist
 
-1. Set strong `SECRET_KEY` and `JWT_SECRET_KEY` (32+ chars)
+With `FLASK_ENV=production` the app refuses to start if `SECRET_KEY` / `JWT_SECRET_KEY` are
+missing, shorter than 32 characters, equal to each other, or still the example values, if
+`ADMIN_PASSWORD` is the default, or if debug is on.
+
+1. Generate secrets: `python -c "import secrets; print(secrets.token_urlsafe(48))"`
 2. Use PostgreSQL: `DATABASE_URL=postgresql://...`
 3. Use Redis for rate limiting: `RATELIMIT_STORAGE_URI=redis://...`
-4. Run behind HTTPS (reverse proxy)
-5. Change default admin credentials immediately
+4. Run `flask db upgrade`, then `gunicorn wsgi:app` behind nginx over HTTPS with `PROXY_FIX_X_FOR=1`
+5. Keep `FLASK_DEBUG=false`; never use `python run.py` on a server
 6. Set `DEFAULT_PHONE_REGION=GE` and `FLASK_ENV=production`
+
+## Security
+
+- All web forms carry a CSRF token (Flask-WTF); the JSON API is exempt because it uses `Authorization` headers.
+- Login is rate limited per IP and per account (only failed attempts count toward the account limit).
+- Changing a password or a user's status signs that user out everywhere, including API tokens.
+- Content-Security-Policy forbids inline scripts: use `data-confirm="..."` on forms and
+  `data-autosubmit` on fields instead of `onsubmit` / `onchange`.

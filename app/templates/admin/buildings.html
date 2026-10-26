@@ -5,11 +5,12 @@
 {% block title %}Buildings — Admin{% endblock %}
 
 {% block content %}
-{{ page_header("Buildings", "Manage building registry for subscriptions.") }}
+{{ page_header(t('admin.buildings.title'), t('admin.buildings.subtitle')) }}
 
 <section class="panel">
   <h2>Create building</h2>
   <form method="post" class="form form-grid">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="form-group">
       <label for="building_number">Building number</label>
       <input type="text" id="building_number" name="building_number" required
@@ -62,7 +63,8 @@
           <td class="table-actions">
             <a href="{{ url_for('admin.edit_building', building_id=building.id) }}" class="btn btn-ghost btn-sm">Edit</a>
             <form method="post" action="{{ url_for('admin.delete_building', building_id=building.id) }}" class="inline-form"
-                  onsubmit="return confirm('Delete this building and all of its subscriptions?');">
+                  data-confirm="Delete this building and all of its subscriptions? Buildings with payment history cannot be deleted.">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="submit" class="btn btn-danger btn-sm">Delete</button>
             </form>
           </td>

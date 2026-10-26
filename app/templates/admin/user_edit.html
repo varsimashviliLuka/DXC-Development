@@ -4,7 +4,7 @@
 {% block title %}Edit User — Admin{% endblock %}
 
 {% block content %}
-{{ page_header("Edit user", "Update resident account details.") }}
+{{ page_header(t('admin.users.edit'), t('admin.users.edit_sub')) }}
 
 <section class="panel user-balance-panel">
   <div class="user-balance-header">
@@ -21,6 +21,7 @@
     method="post"
     action="{{ url_for('admin.adjust_user_balance', user_id=user.id) }}"
     class="form form-grid user-balance-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="form-group form-group-full balance-direction-group">
       <span class="form-label">Action</span>
       <div class="balance-direction-options">
@@ -79,6 +80,7 @@
 
 <section class="panel">
   <form method="post" id="edit-user-form" class="form form-grid">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="form-group">
       <label for="id_number">ID number</label>
       <input type="text" id="id_number" name="id_number" required
@@ -129,7 +131,7 @@
     url_for('admin.users'),
     url_for('admin.delete_user', user_id=user.id),
     "Delete user",
-    "Delete this user permanently? Subscriptions, chips, and transactions will be removed."
+    "Delete this user permanently? Their subscriptions and chips will be removed. Users with payment history cannot be deleted."
   ) }}
 </section>
 {% endblock %}

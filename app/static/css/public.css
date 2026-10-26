@@ -1,0 +1,139 @@
+/* Public website layout. Functional baseline; visual redesign comes later. */
+
+.public-body { background: var(--surface); }
+
+.public-container {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.public-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.public-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 64px;
+}
+
+.public-brand { display: flex; align-items: baseline; gap: 10px; color: var(--text); }
+.public-brand-mark { font-weight: 800; font-size: 1.25rem; color: var(--primary); }
+.public-brand-name { color: var(--text-muted); font-size: 0.9rem; }
+
+.public-nav { display: flex; align-items: center; gap: 20px; }
+.public-nav-link { color: var(--text); font-weight: 500; }
+.public-nav-link.active { color: var(--primary); }
+
+.public-lang { display: flex; gap: 6px; font-size: 0.85rem; }
+.public-lang-link { color: var(--text-muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+.public-lang-link.active { background: var(--primary-soft); color: var(--primary); font-weight: 600; }
+
+.public-nav-toggle { display: none; }
+
+.public-main .flash-container { max-width: 1120px; margin: 16px auto 0; padding: 0 20px; }
+
+.public-hero {
+  padding: 80px 0 64px;
+  background: linear-gradient(180deg, var(--primary-soft), var(--surface));
+}
+.public-hero h1 { font-size: clamp(2rem, 4vw, 3rem); line-height: 1.15; margin: 0 0 16px; max-width: 760px; }
+
+.public-lead { font-size: 1.15rem; color: var(--text-muted); max-width: 720px; }
+
+.public-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+
+.public-page-header { padding: 56px 0 24px; background: var(--surface-2); border-bottom: 1px solid var(--border); }
+.public-page-header h1 { margin: 0 0 8px; }
+
+.public-section { padding: 56px 0; }
+.public-section-alt { background: var(--surface-2); }
+.public-section h2 { margin-top: 0; }
+
+.public-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 20px;
+}
+.public-card-grid-3 { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+
+.public-card, .public-feature {
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.public-card h3, .public-feature h3 { margin-top: 0; }
+
+.public-callout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 32px;
+  border-radius: var(--radius);
+  background: var(--primary-soft);
+}
+
+.public-service-list { display: grid; gap: 24px; }
+.public-service {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  padding: 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  scroll-margin-top: 80px;
+}
+
+.public-checklist { margin: 0; padding-left: 1.2em; }
+.public-checklist li { margin-bottom: 6px; }
+
+.public-prose { max-width: 760px; }
+
+.public-contact-grid { display: grid; grid-template-columns: 3fr 2fr; gap: 24px; align-items: start; }
+
+/* Spam trap: kept out of view and out of the tab order for people, still in the DOM for bots. */
+.public-hp {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.form-error { color: var(--danger); font-size: 0.875rem; margin: 4px 0 0; }
+[aria-invalid="true"] { border-color: var(--danger) !important; }
+
+.public-footer { border-top: 1px solid var(--border); background: var(--surface-2); padding: 40px 0 24px; }
+.public-footer-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.public-footer p { margin: 4px 0; }
+.public-social { display: flex; gap: 12px; }
+.public-footer-bottom { margin-top: 24px; font-size: 0.85rem; }
+
+@media (max-width: 820px) {
+  .public-nav-toggle { display: inline-flex; }
+  .public-nav {
+    display: none;
+    position: absolute;
+    top: 64px;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .public-nav.open { display: flex; }
+  .public-service, .public-contact-grid, .public-footer-grid { grid-template-columns: 1fr; }
+  .public-callout { flex-direction: column; align-items: flex-start; }
+}

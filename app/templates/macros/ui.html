@@ -7,17 +7,17 @@
 </header>
 {% endmacro %}
 
-{% macro search_bar(action, placeholder="Search...", value="") %}
+{% macro search_bar(action, placeholder=None, value="") %}
 <form class="search-bar" method="get" action="{{ action }}">
   <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-  <input type="search" name="q" value="{{ value }}" placeholder="{{ placeholder }}" class="search-input">
+  <input type="search" name="q" value="{{ value }}" placeholder="{{ placeholder or t('common.search') }}" class="search-input">
   {% if value %}
-  <a href="{{ action }}" class="btn btn-ghost btn-sm">Clear</a>
+  <a href="{{ action }}" class="btn btn-ghost btn-sm">{{ t('common.clear') }}</a>
   {% endif %}
 </form>
 {% endmacro %}
 
-{% macro combobox(name, label, source, placeholder="Type to search...", required=false, value="", label_text="") %}
+{% macro combobox(name, label, source, placeholder=None, required=false, value="", label_text="") %}
 <div class="combobox{% if required %} combobox-required{% endif %}"
      data-combobox
      data-source="{{ source }}"
@@ -26,7 +26,7 @@
      data-initial-label="{{ label_text }}">
   <label class="form-label">{{ label }}</label>
   <div class="combobox-control">
-    <input type="text" class="combobox-input" placeholder="{{ placeholder }}" autocomplete="off" spellcheck="false">
+    <input type="text" class="combobox-input" placeholder="{{ placeholder or t('common.search') }}" autocomplete="off" spellcheck="false">
     <input type="hidden" name="{{ name }}" value="{{ value }}" {% if required %}required{% endif %}>
     <button type="button" class="combobox-clear" aria-label="Clear selection" hidden>&times;</button>
     <ul class="combobox-dropdown" role="listbox" hidden></ul>
@@ -36,7 +36,7 @@
 
 {% macro badge(status) %}
 {% set s = status.value if status.value is defined else status %}
-<span class="badge badge-{{ s }}">{{ s }}</span>
+<span class="badge badge-{{ s }}">{{ t('status.' ~ s) }}</span>
 {% endmacro %}
 
 {% macro money(amount, class='') %}
@@ -121,13 +121,14 @@
 {% macro edit_panel_footer(form_id, cancel_url, delete_url=None, delete_label="Delete", delete_confirm="Are you sure?") %}
 <footer class="panel-footer">
   <div class="panel-footer-main">
-    <a href="{{ cancel_url }}" class="btn btn-ghost">Cancel</a>
-    <button type="submit" class="btn btn-primary" form="{{ form_id }}">Save changes</button>
+    <a href="{{ cancel_url }}" class="btn btn-ghost">{{ t('common.cancel') }}</a>
+    <button type="submit" class="btn btn-primary" form="{{ form_id }}">{{ t('common.save_changes') }}</button>
   </div>
   {% if delete_url %}
   <div class="panel-footer-danger">
     <form method="post" action="{{ delete_url }}" class="inline-form"
-          onsubmit="return confirm('{{ delete_confirm }}');">
+          data-confirm="{{ delete_confirm }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button type="submit" class="btn btn-danger">{{ delete_label }}</button>
     </form>
   </div>

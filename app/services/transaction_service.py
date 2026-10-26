@@ -231,7 +231,7 @@ class TransactionService:
     if reference and Transaction.query.filter_by(reference=reference).first():
       raise AppError(f"Transaction reference already exists: {reference}", 409)
 
-    user.balance += amount
+    user.adjust_balance(amount)
     txn = Transaction(
       user_id=user.id,
       amount=amount,
@@ -271,11 +271,11 @@ class TransactionService:
 
     if direction == "add":
       signed_amount = amount
-      user.balance += amount
+      user.adjust_balance(amount)
       txn_description = (description or "").strip() or DEFAULT_ADMIN_CREDIT_DESCRIPTION
     else:
       signed_amount = -amount
-      user.balance -= amount
+      user.adjust_balance(-amount)
       txn_description = (description or "").strip() or DEFAULT_ADMIN_DEBIT_DESCRIPTION
 
     txn = Transaction(

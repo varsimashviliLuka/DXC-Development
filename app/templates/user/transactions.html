@@ -2,16 +2,16 @@
 {% from "macros/pagination.html" import render_pagination %}
 {% from "macros/ui.html" import page_header, money, badge %}
 
-{% block title %}My Transactions{% endblock %}
+{% block title %}{{ t('user.txn.title') }}{% endblock %}
 
 {% block content %}
-{{ page_header("Payment history", "All credits and charges on your account.") }}
+{{ page_header(t('user.txn.title'), t('user.txn.subtitle')) }}
 
 <section class="panel">
   <div class="panel-header user-list-header">
     <div>
-      <h2>Your transactions</h2>
-      <p class="muted user-list-count">{{ pagination.total }} transaction{{ 's' if pagination.total != 1 else '' }}</p>
+      <h2>{{ t('user.txn.heading') }}</h2>
+      <p class="muted user-list-count">{{ t('user.txn.count', n=pagination.total) }}</p>
     </div>
   </div>
 
@@ -20,23 +20,23 @@
     <table class="data-table user-records-table">
       <thead>
         <tr>
-          <th>Date</th>
-          <th>Type</th>
-          <th>Amount</th>
-          <th>Status</th>
-          <th class="hide-mobile">Reference</th>
-          <th>Description</th>
+          <th>{{ t('col.date') }}</th>
+          <th>{{ t('col.type') }}</th>
+          <th>{{ t('col.amount') }}</th>
+          <th>{{ t('col.status') }}</th>
+          <th class="hide-mobile">{{ t('col.reference') }}</th>
+          <th>{{ t('col.description') }}</th>
         </tr>
       </thead>
       <tbody>
         {% for txn in transactions %}
         <tr>
-          <td data-label="Date">{{ txn.created_at.strftime('%Y-%m-%d %H:%M') if txn.created_at else '—' }}</td>
-          <td data-label="Type">{{ badge(txn.transaction_type) }}</td>
-          <td data-label="Amount">{{ money(txn.amount, 'text-success' if txn.amount >= 0 else 'text-danger') }}</td>
-          <td data-label="Status">{{ badge(txn.status) }}</td>
-          <td class="hide-mobile" data-label="Reference">{{ txn.reference or '—' }}</td>
-          <td data-label="Description">{{ txn.description or '—' }}</td>
+          <td data-label="{{ t('col.date') }}">{{ txn.created_at.strftime('%Y-%m-%d %H:%M') if txn.created_at else '—' }}</td>
+          <td data-label="{{ t('col.type') }}">{{ badge(txn.transaction_type) }}</td>
+          <td data-label="{{ t('col.amount') }}">{{ money(txn.amount, 'text-success' if txn.amount >= 0 else 'text-danger') }}</td>
+          <td data-label="{{ t('col.status') }}">{{ badge(txn.status) }}</td>
+          <td class="hide-mobile" data-label="{{ t('col.reference') }}">{{ txn.reference or '—' }}</td>
+          <td data-label="{{ t('col.description') }}">{{ txn.description or '—' }}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -44,7 +44,7 @@
   </div>
   {{ render_pagination(pagination, 'user.transactions') }}
   {% else %}
-  <p class="muted">No transactions yet.</p>
+  <p class="muted">{{ t('user.txn.empty') }}</p>
   {% endif %}
 </section>
 {% endblock %}

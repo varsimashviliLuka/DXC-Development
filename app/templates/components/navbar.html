@@ -20,6 +20,7 @@
         <a href="{{ url_for('user.profile') }}">Profile</a>
       {% endif %}
       <form action="{{ url_for('auth.logout') }}" method="post" class="inline-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit">Logout ({{ current_user.phone_number }})</button>
       </form>
     {% else %}

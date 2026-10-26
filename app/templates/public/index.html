@@ -1,0 +1,57 @@
+{% extends "public/base.html" %}
+
+{% block content %}
+<section class="public-hero">
+  <div class="public-container">
+    <h1>{{ t('home.title') }}</h1>
+    <p class="public-lead">{{ t('home.subtitle') }}</p>
+    <div class="public-actions">
+      <a href="{{ url_for('main.contact') }}" class="btn btn-primary">{{ t('home.cta_primary') }}</a>
+      <a href="{{ url_for('main.services') }}" class="btn btn-secondary">{{ t('home.cta_secondary') }}</a>
+    </div>
+  </div>
+</section>
+
+<section class="public-section">
+  <div class="public-container">
+    <h2>{{ t('home.services_title') }}</h2>
+    <div class="public-card-grid">
+      {% for key in services %}
+      <article class="public-card">
+        <h3>{{ t('service.' ~ key ~ '.title') }}</h3>
+        <p>{{ t('service.' ~ key ~ '.summary') }}</p>
+        <a href="{{ url_for('main.services', _anchor=key) }}">{{ t('home.learn_more') }} →</a>
+      </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="public-section public-section-alt">
+  <div class="public-container">
+    <h2>{{ t('home.why_title') }}</h2>
+    <div class="public-card-grid public-card-grid-3">
+      {% for key in ['fast', 'support', 'fees'] %}
+      <div class="public-feature">
+        <h3>{{ t('home.why.' ~ key ~ '.title') }}</h3>
+        <p>{{ t('home.why.' ~ key ~ '.text') }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="public-section">
+  <div class="public-container public-callout">
+    <div>
+      <h2>{{ t('home.customers_title') }}</h2>
+      <p>{{ t('home.customers_text') }}</p>
+    </div>
+    {% if current_user %}
+    <a href="{{ url_for('main.account') }}" class="btn btn-primary">{{ t('nav.account') }}</a>
+    {% else %}
+    <a href="{{ url_for('auth.login') }}" class="btn btn-primary">{{ t('nav.login') }}</a>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

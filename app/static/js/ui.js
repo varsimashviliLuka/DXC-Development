@@ -540,10 +540,42 @@ function escapeHtml(str) {
     .replace(/"/g, "&quot;");
 }
 
+function initConfirmForms() {
+  document.querySelectorAll("form[data-confirm]").forEach((form) => {
+    form.addEventListener("submit", (event) => {
+      if (!window.confirm(form.dataset.confirm)) event.preventDefault();
+    });
+  });
+}
+
+function initPublicNav() {
+  const toggle = document.querySelector("[data-public-nav-toggle]");
+  const nav = document.querySelector("[data-public-nav]");
+  if (!toggle || !nav) return;
+  toggle.addEventListener("click", () => {
+    const open = nav.classList.toggle("open");
+    toggle.setAttribute("aria-expanded", String(open));
+  });
+}
+
+function initAutoSubmit() {
+  document.querySelectorAll("[data-autosubmit]").forEach((field) => {
+    field.addEventListener("change", () => {
+      const form = field.form;
+      if (!form) return;
+      if (form.requestSubmit) form.requestSubmit();
+      else form.submit();
+    });
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   initFlashMessages();
   initMobileNav();
   initComboboxes();
   initTransactionDialogs();
   initPhoneLists();
+  initConfirmForms();
+  initAutoSubmit();
+  initPublicNav();
 });

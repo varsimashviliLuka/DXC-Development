@@ -9,12 +9,20 @@ from pathlib import Path
 
 from flask import Blueprint, current_app, flash, g, redirect, render_template, request, url_for
 
-from app.enums import SubscriptionStatus, TransactionStatus, TransactionType, UserRole, UserStatus
+from app.enums import (
+  InquiryStatus,
+  SubscriptionStatus,
+  TransactionStatus,
+  TransactionType,
+  UserRole,
+  UserStatus,
+)
 from app.models import Building, User
 from app.services.auth_service import AuthService
 from app.services.bank_import_service import BankImportService
 from app.services.building_service import BuildingService
 from app.services.chip_service import ChipService
+from app.services.inquiry_service import InquiryService
 from app.services.subscription_service import SubscriptionService
 from app.services.transaction_service import TransactionService
 from app.services.user_service import UserService
@@ -82,7 +90,7 @@ def transactions():
     transaction_type=form_value(request.args, "transaction_type") if request.args else None,
     status=form_value(request.args, "status") if request.args else None,
     free_text=form_value(request.args, "q") if request.args else None,
-    page=int(request.args.get("page", 1)),
+    page=request.args.get("page", 1, type=int),
     per_page=20,
   )
   return render_template(
@@ -134,7 +142,7 @@ def users():
   q = _search_q()
   negative_balance_only = _negative_balance_filter()
   page = UserService.list_users(
-    page=int(request.args.get("page", 1)),
+    page=request.args.get("page", 1, type=int),
     per_page=20,
     search=q,
     negative_balance_only=negative_balance_only,
@@ -246,7 +254,7 @@ def buildings():
 
   q = _search_q()
   page = BuildingService.list_buildings(
-    page=int(request.args.get("page", 1)),
+    page=request.args.get("page", 1, type=int),
     per_page=20,
     search=q,
   )
@@ -339,7 +347,7 @@ def subscriptions():
   q = _search_q()
   overdue_only = _overdue_only_filter()
   page = SubscriptionService.list_all(
-    page=int(request.args.get("page", 1)),
+    page=request.args.get("page", 1, type=int),
     per_page=20,
     search=q,
     overdue_only=overdue_only,
@@ -421,7 +429,7 @@ def chips():
 
   q = _search_q()
   page = ChipService.list_all(
-    page=int(request.args.get("page", 1)),
+    page=request.args.get("page", 1, type=int),
     per_page=20,
     search=q,
   )
@@ -528,7 +536,7 @@ def logs():
 
   per_page = 200
   total = len(filtered)
-  page = max(1, int(request.args.get("page", 1)))
+  page = max(1, request.args.get("page", 1, type=int))
   pages = max(1, (total + per_page - 1) // per_page)
   page = min(page, pages)
   start = (page - 1) * per_page
@@ -615,3 +623,48 @@ def create_user_from_payment(import_id):
   except Exception as exc:
     flash_exception(exc)
   return redirect(url_for("admin.unmatched_payments"))
+
+
+@admin_bp.route("/inquiries")
+@admin_required
+def inquiries():
+  status_value = request.args.get("status") or ""
+  status = InquiryStatus(status_value) if status_value in {s.value for s in InquiryStatus} else None
+  page = InquiryService.list_inquiries(
+    status=status,
+    search=_search_q(),
+    page=request.args.get("page", 1, type=int),
+    per_page=20,
+  )
+  params = {k: v for k, v in {"status": status.value if status else None, "q": _search_q()}.items() if v}
+  return render_template(
+    "admin/inquiries.html",
+    inquiries=page.items,
+    pagination=page,
+    statuses=list(InquiryStatus),
+    status_filter=status,
+    search_q=_search_q() or "",
+    filter_params=params,
+  )
+
+
+@admin_bp.route("/inquiries/<int:inquiry_id>", methods=["GET", "POST"])
+@admin_required
+def inquiry_detail(inquiry_id):
+  inquiry = InquiryService.get_by_id(inquiry_id)
+  if request.method == "POST":
+    try:
+      InquiryService.update(
+        inquiry_id,
+        status=InquiryStatus(form_value(request.form, "status", InquiryStatus.NEW.value)),
+        admin_note=form_value(request.form, "admin_note"),
+      )
+      flash("Inquiry updated.", "success")
+      return redirect(url_for("admin.inquiries"))
+    except Exception as exc:
+      flash_exception(exc)
+  return render_template(
+    "admin/inquiry_detail.html",
+    inquiry=inquiry,
+    statuses=list(InquiryStatus),
+  )

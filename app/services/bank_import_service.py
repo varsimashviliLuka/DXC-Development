@@ -281,7 +281,7 @@ class BankImportService:
 
   @staticmethod
   def _credit_user(bank_import: BankImport, user: User) -> Transaction:
-    user.balance += bank_import.amount
+    user.adjust_balance(bank_import.amount)
     txn = Transaction(
       user_id=user.id,
       amount=bank_import.amount,
@@ -321,7 +321,7 @@ class BankImportService:
 
     amounts = BankImportService._split_amount(bank_import.amount, len(users))
     for idx, (user, amount) in enumerate(zip(users, amounts), start=1):
-      user.balance += amount
+      user.adjust_balance(amount)
       txn = Transaction(
         user_id=user.id,
         amount=amount,

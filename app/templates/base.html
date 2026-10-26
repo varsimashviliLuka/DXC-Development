@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ lang }}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -18,7 +18,7 @@
           <strong>{{ app_name }}</strong>
           <span class="topbar-brand-byline">{{ app_name_full }}</span>
         </div>
-        <button type="button" class="btn btn-ghost btn-sm" data-nav-toggle>Menu</button>
+        <button type="button" class="btn btn-ghost btn-sm" data-nav-toggle>{{ t('common.menu') }}</button>
       </div>
       {% include "components/flash.html" %}
       <main class="container">

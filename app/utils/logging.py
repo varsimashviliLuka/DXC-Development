@@ -18,7 +18,7 @@ def setup_logging(app):
       try:
         from flask import g, has_request_context
 
-        record.request_id = g.request_id if has_request_context() else "-"
+        record.request_id = g.get("request_id", "-") if has_request_context() else "-"
       except RuntimeError:
         record.request_id = "-"
       return True

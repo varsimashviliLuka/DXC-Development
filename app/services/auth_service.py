@@ -4,6 +4,7 @@ import logging
 
 from flask_jwt_extended import create_access_token
 
+from app.config import DEFAULT_ADMIN_PASSWORD
 from app.enums import UserRole, UserStatus
 from app.extensions import db
 from app.models import User
@@ -19,13 +20,28 @@ from app.utils.validators import (
 
 logger = logging.getLogger(__name__)
 
+_dummy_password_hash = None
+
+
+def _verify_against_dummy(password: str) -> None:
+  """Spend the same hashing time as a real check so unknown IDs can't be detected by timing."""
+  global _dummy_password_hash
+  if _dummy_password_hash is None:
+    _dummy_password_hash = hash_password("dummy-password-for-timing")
+  verify_password(_dummy_password_hash, password)
+
 
 class AuthService:
   @staticmethod
   def authenticate(id_number: str, password: str) -> User:
-    id_num = validate_id_number(id_number)
+    try:
+      id_num = validate_id_number(id_number)
+    except ValidationError:
+      raise UnauthorizedError("Invalid ID number or password")
     user = User.query.filter_by(id_number=id_num).first()
-    if not user or not verify_password(user.password_hash, password):
+    if not user:
+      _verify_against_dummy(password or "")
+    if not user or not verify_password(user.password_hash, password or ""):
       logger.warning("Failed login attempt for id_number=%s", id_num)
       raise UnauthorizedError("Invalid ID number or password")
 
@@ -39,7 +55,7 @@ class AuthService:
     user = AuthService.authenticate(id_number, password)
     token = create_access_token(
       identity=str(user.id),
-      additional_claims={"role": user.role.value},
+      additional_claims={"role": user.role.value, "av": user.auth_version or 0},
     )
     logger.info("User logged in user_id=%s role=%s", user.id, user.role.value)
     return {"access_token": token, "user": user.to_dict(include_admin=user.is_admin())}
@@ -52,6 +68,14 @@ class AuthService:
 
     user = User.query.filter_by(id_number=id_number).first()
     if user:
+      if (
+        not app_config.get("TESTING")
+        and verify_password(user.password_hash, DEFAULT_ADMIN_PASSWORD)
+      ):
+        message = "Admin account still uses the published default password; change it now"
+        if app_config.get("ENV_NAME") == "production":
+          raise ValueError(message)
+        logger.warning(message)
       if user.role != UserRole.ADMIN:
         user.role = UserRole.ADMIN
         db.session.commit()
@@ -132,5 +156,6 @@ class AuthService:
       raise ValidationError("New password must be different from current password")
 
     user.password_hash = hash_password(new_pwd)
+    user.revoke_sessions()
     db.session.commit()
     logger.info("Password changed for user_id=%s", user.id)

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% from "macros/ui.html" import page_header, badge %}
+
+{% block title %}{{ t('admin.inquiries.open', id=inquiry.id) }} — {{ app_name }}{% endblock %}
+
+{% block content %}
+{{ page_header(t('admin.inquiries.open', id=inquiry.id), t('admin.inquiries.received', when=inquiry.created_at.strftime('%Y-%m-%d %H:%M'))) }}
+
+<section class="panel">
+  <dl class="detail-list">
+    <dt>{{ t('col.name') }}</dt>
+    <dd>{{ inquiry.name }}</dd>
+    <dt>{{ t('col.phone') }}</dt>
+    <dd><a href="tel:{{ inquiry.phone }}">{{ inquiry.phone }}</a></dd>
+    <dt>{{ t('col.email') }}</dt>
+    <dd>{% if inquiry.email %}<a href="mailto:{{ inquiry.email }}">{{ inquiry.email }}</a>{% else %}—{% endif %}</dd>
+    <dt>{{ t('col.service') }}</dt>
+    <dd>{{ t('service.' ~ inquiry.service ~ '.title') }}</dd>
+    <dt>{{ t('admin.inquiries.language') }}</dt>
+    <dd>{{ LANGUAGES.get(inquiry.language, inquiry.language) }}</dd>
+    <dt>{{ t('col.status') }}</dt>
+    <dd>{{ badge(inquiry.status) }}</dd>
+    <dt>{{ t('admin.inquiries.notify') }}</dt>
+    <dd>{{ inquiry.notified_at.strftime('%Y-%m-%d %H:%M') if inquiry.notified_at else t('admin.inquiries.not_sent') }}</dd>
+  </dl>
+  <h3>{{ t('admin.inquiries.message') }}</h3>
+  <p class="inquiry-message">{{ inquiry.message }}</p>
+</section>
+
+<section class="panel">
+  <h2>{{ t('admin.inquiries.follow_up') }}</h2>
+  <form method="post" class="form form-grid">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-group">
+      <label for="status">{{ t('col.status') }}</label>
+      <select id="status" name="status">
+        {% for s in statuses %}
+        <option value="{{ s.value }}"{% if inquiry.status == s %} selected{% endif %}>{{ t('status.' ~ s.value) }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group form-group-full">
+      <label for="admin_note">{{ t('admin.inquiries.note') }}</label>
+      <textarea id="admin_note" name="admin_note" rows="4"
+                placeholder="{{ t('admin.inquiries.note_ph') }}">{{ inquiry.admin_note or '' }}</textarea>
+    </div>
+    <div class="form-actions">
+      <a href="{{ url_for('admin.inquiries') }}" class="btn btn-ghost">{{ t('admin.inquiries.back') }}</a>
+      <button type="submit" class="btn btn-primary">{{ t('common.save') }}</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

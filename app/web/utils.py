@@ -1,9 +1,21 @@
 """Shared helpers for server-rendered routes."""
 
+from urllib.parse import urlparse
+
 from flask import flash
 
 from app.utils.errors import AppError
 from app.utils.validators import ValidationError
+
+
+def is_safe_next_url(target: str | None) -> bool:
+  """Only allow redirects to paths on this site (blocks //evil.com, https://evil.com, /\\evil.com)."""
+  if not target or not target.startswith("/") or target.startswith("//"):
+    return False
+  if "\\" in target:
+    return False
+  parsed = urlparse(target)
+  return not parsed.scheme and not parsed.netloc
 
 
 def flash_exception(exc: Exception) -> None:

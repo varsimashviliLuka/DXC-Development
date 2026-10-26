@@ -11,7 +11,7 @@ def test_login_redirects_admin(client):
     follow_redirects=False,
   )
   assert response.status_code == 302
-  assert response.location.endswith("/")
+  assert response.location.endswith("/account")
 
 
 def test_admin_dashboard_requires_login(client):

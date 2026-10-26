@@ -166,6 +166,23 @@ a:hover { color: var(--primary-hover); }
   background: var(--sidebar);
 }
 
+.sidebar-lang {
+  display: flex;
+  gap: 6px;
+  padding: 0 0.75rem 0.75rem;
+}
+.sidebar-lang-link {
+  color: #94a3b8;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+.sidebar-lang-link.active {
+  background: rgba(99, 102, 241, 0.3);
+  color: #fff;
+}
+
 .sidebar-footer .btn.btn-ghost,
 .sidebar-footer .sidebar-signout {
   border-color: rgba(255, 255, 255, 0.2);
@@ -1617,3 +1634,22 @@ body.modal-open {
   .logs-table .col-ts { font-size: 0.75rem; }
   .logs-table td, .logs-table th { padding: 0.45rem 0.55rem; }
 }
+
+.badge-new { background: var(--primary-soft); color: var(--primary); }
+.badge-in_progress { background: var(--warning-soft); color: var(--warning); }
+.badge-done { background: var(--success-soft); color: var(--success); }
+.badge-spam { background: #f1f5f9; color: #475569; }
+
+.sidebar-count {
+  display: inline-block;
+  min-width: 20px;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.inquiry-message { white-space: pre-wrap; }

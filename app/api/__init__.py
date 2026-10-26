@@ -14,13 +14,12 @@ from app.api.namespaces import (
 )
 
 
-def register_api(blueprint, *, app_name="DXC"):
+def register_api(blueprint, *, app_name="DXC", docs_enabled=True):
   api = Api(
-    blueprint,
     version="1.0",
     title=f"{app_name} API",
     description=f"REST API for {app_name} — building access, subscriptions, and billing.",
-    doc="/docs",
+    doc="/docs" if docs_enabled else False,
     security="Bearer",
     authorizations={
       "Bearer": {
@@ -41,4 +40,6 @@ def register_api(blueprint, *, app_name="DXC"):
   api.add_namespace(transactions_ns, path="/transactions")
   api.add_namespace(me_ns, path="/me")
 
+  # flask-restx only honours add_specs in init_app, not in the constructor.
+  api.init_app(blueprint, add_specs=docs_enabled)
   return api

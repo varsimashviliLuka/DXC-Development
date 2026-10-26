@@ -5,7 +5,7 @@
 
 {% block content %}
 <div class="logs-page">
-  {{ page_header("Application logs", log_file ~ " · " ~ (log_file_size // 1024) ~ " KB") }}
+  {{ page_header(t('admin.logs.title'), log_file ~ " · " ~ (log_file_size // 1024) ~ " KB") }}
 
   <details class="panel logs-filters" {% if level_filter or module_filter or text_filter or date_filter %}open{% else %}open{% endif %}>
     <summary class="logs-filters-summary">

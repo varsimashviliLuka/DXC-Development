@@ -4,11 +4,12 @@
 {% block title %}Edit Subscription — Admin{% endblock %}
 
 {% block content %}
-{{ page_header("Edit subscription", "Update door subscription and billing details.") }}
+{{ page_header(t('admin.subs.edit'), t('admin.subs.edit_sub')) }}
 
 <section class="panel">
   <p class="muted">Payment reference: <code>{{ subscription.payment_reference or '—' }}</code></p>
   <form method="post" id="edit-subscription-form" class="form form-grid">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     {{ combobox(
       "user_id",
       "Resident",

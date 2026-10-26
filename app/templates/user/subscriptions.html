@@ -2,17 +2,18 @@
 {% from "macros/pagination.html" import render_pagination %}
 {% from "macros/ui.html" import page_header, money, badge %}
 
-{% block title %}My Subscriptions{% endblock %}
+{% block title %}{{ t('user.subs.title') }}{% endblock %}
 
 {% block content %}
-{{ page_header("My subscriptions", "Door-level billing for your buildings.") }}
+{{ page_header(t('user.subs.title'), t('user.subs.subtitle')) }}
 
 <section class="panel">
   <div class="panel-header user-list-header">
     <div>
-      <h2>Your subscriptions</h2>
-      <p class="muted user-list-count">{{ pagination.total }} subscription{{ 's' if pagination.total != 1 else '' }}</p>
+      <h2>{{ t('user.subs.heading') }}</h2>
+      <p class="muted user-list-count">{{ t('user.subs.count', n=pagination.total) }}</p>
     </div>
+    <a href="{{ url_for('user.pay') }}" class="btn btn-secondary btn-sm">{{ t('nav.user.pay') }}</a>
   </div>
 
   {% if subscriptions %}
@@ -20,23 +21,23 @@
     <table class="data-table user-records-table">
       <thead>
         <tr>
-          <th>Building</th>
-          <th>Door</th>
-          <th>Payment reference</th>
-          <th>Monthly fee</th>
-          <th>Status</th>
-          <th>Next payment due</th>
+          <th>{{ t('col.building') }}</th>
+          <th>{{ t('col.door') }}</th>
+          <th>{{ t('col.payment_reference') }}</th>
+          <th>{{ t('col.monthly_fee') }}</th>
+          <th>{{ t('col.status') }}</th>
+          <th>{{ t('col.next_due') }}</th>
         </tr>
       </thead>
       <tbody>
         {% for sub in subscriptions %}
         <tr>
-          <td data-label="Building">{{ sub.building.name if sub.building else sub.building_id }}</td>
-          <td data-label="Door">{{ sub.door_number }}</td>
-          <td data-label="Payment reference"><code>{{ sub.payment_reference or '—' }}</code></td>
-          <td data-label="Monthly fee">{{ money(sub.monthly_fee) }}</td>
-          <td data-label="Status">{{ badge(sub.status) }}</td>
-          <td data-label="Next due">{{ sub.next_payment_due or '—' }}</td>
+          <td data-label="{{ t('col.building') }}">{{ sub.building.name if sub.building else sub.building_id }}</td>
+          <td data-label="{{ t('col.door') }}">{{ sub.door_number }}</td>
+          <td data-label="{{ t('col.payment_reference') }}"><code>{{ sub.payment_reference or '—' }}</code></td>
+          <td data-label="{{ t('col.monthly_fee') }}">{{ money(sub.monthly_fee) }}</td>
+          <td data-label="{{ t('col.status') }}">{{ badge(sub.status) }}</td>
+          <td data-label="{{ t('col.next_due') }}">{{ sub.next_payment_due or '—' }}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -44,7 +45,7 @@
   </div>
   {{ render_pagination(pagination, 'user.subscriptions') }}
   {% else %}
-  <p class="muted">You have no subscriptions.</p>
+  <p class="muted">{{ t('user.subs.empty') }}</p>
   {% endif %}
 </section>
 {% endblock %}

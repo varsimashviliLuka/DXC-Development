@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>{% block title %}{{ company.name }}{% endblock %}</title>
+  <meta name="description" content="{% block description %}{{ t('home.subtitle') }}{% endblock %}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/public.css') }}">
+</head>
+<body class="public-body">
+  {% set nav_items = [
+    ('main.index', 'nav.home'),
+    ('main.services', 'nav.services'),
+    ('main.about', 'nav.about'),
+    ('main.contact', 'nav.contact'),
+  ] %}
+  <header class="public-header">
+    <div class="public-container public-header-inner">
+      <a href="{{ url_for('main.index') }}" class="public-brand">
+        <span class="public-brand-mark">{{ app_name }}</span>
+        <span class="public-brand-name">{{ company.name }}</span>
+      </a>
+      <button type="button" class="btn btn-ghost btn-sm public-nav-toggle" data-public-nav-toggle
+              aria-expanded="false" aria-controls="public-nav">{{ t('nav.menu') }}</button>
+      <nav class="public-nav" id="public-nav" data-public-nav>
+        {% for endpoint, label in nav_items %}
+        <a href="{{ url_for(endpoint) }}" class="public-nav-link{% if request.endpoint == endpoint %} active{% endif %}">{{ t(label) }}</a>
+        {% endfor %}
+        <span class="public-lang" aria-label="{{ t('nav.language') }}">
+          {% for code, name in LANGUAGES.items() %}
+          <a href="{{ url_for('main.set_language', code=code, next=request.full_path) }}"
+             class="public-lang-link{% if code == lang %} active{% endif %}" hreflang="{{ code }}" lang="{{ code }}">{{ code | upper }}</a>
+          {% endfor %}
+        </span>
+        {% if current_user %}
+        <a href="{{ url_for('main.account') }}" class="btn btn-primary btn-sm">{{ t('nav.account') }}</a>
+        {% else %}
+        <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-sm">{{ t('nav.login') }}</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  {% include "components/flash.html" %}
+
+  <main class="public-main">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="public-footer">
+    <div class="public-container public-footer-grid">
+      <div>
+        <strong>{{ company.name }}</strong>
+        {% if localized(company.address) %}<p>{{ localized(company.address) }}</p>{% endif %}
+        {% if localized(company.hours) %}<p class="muted">{{ localized(company.hours) }}</p>{% endif %}
+      </div>
+      <div>
+        {% if company.phone %}<p><a href="tel:{{ company.phone }}">{{ company.phone }}</a></p>{% endif %}
+        {% if company.email %}<p><a href="mailto:{{ company.email }}">{{ company.email }}</a></p>{% endif %}
+      </div>
+      <div>
+        {% if company.facebook_url or company.instagram_url %}
+        <p class="muted">{{ t('footer.follow') }}</p>
+        <p class="public-social">
+          {% if company.facebook_url | external_url %}<a href="{{ company.facebook_url | external_url }}" rel="noopener" target="_blank">Facebook</a>{% endif %}
+          {% if company.instagram_url | external_url %}<a href="{{ company.instagram_url | external_url }}" rel="noopener" target="_blank">Instagram</a>{% endif %}
+        </p>
+        {% endif %}
+      </div>
+    </div>
+    <div class="public-container public-footer-bottom muted">
+      © {{ current_year }} {{ company.legal_name or company.name }}. {{ t('footer.rights') }}
+    </div>
+  </footer>
+
+  <script src="{{ url_for('static', filename='js/ui.js') }}"></script>
+</body>
+</html>

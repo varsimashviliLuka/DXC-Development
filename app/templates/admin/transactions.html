@@ -9,7 +9,7 @@
   class="transactions-page"
   data-bank-import-url="{{ url_for('admin_api.transaction_bank_import', transaction_id=0) }}"
 >
-  {{ page_header("Transactions", "All ledger entries with admin filtering.") }}
+  {{ page_header(t('admin.txn.title'), t('admin.txn.subtitle')) }}
 
   <details class="panel transactions-filters" open>
     <summary class="transactions-filters-summary">

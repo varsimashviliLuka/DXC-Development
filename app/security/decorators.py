@@ -46,6 +46,9 @@ def _load_current_user():
     logger.warning("JWT references missing user_id=%s", user_id)
     raise UnauthorizedError("User not found")
 
+  if claims.get("av", 0) != (user.auth_version or 0):
+    raise UnauthorizedError("Token has been revoked")
+
   if user.status == UserStatus.SUSPENDED:
     raise ForbiddenError("Account is suspended")
 

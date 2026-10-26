@@ -47,6 +47,13 @@ class ImportMatchStatus(str, enum.Enum):
   DUPLICATE = "duplicate"
 
 
+class InquiryStatus(str, enum.Enum):
+  NEW = "new"
+  IN_PROGRESS = "in_progress"
+  DONE = "done"
+  SPAM = "spam"
+
+
 class PaymentMatchMethod(str, enum.Enum):
   DOOR_REFERENCE = "door_reference"
   UID_TOKEN = "uid_token"

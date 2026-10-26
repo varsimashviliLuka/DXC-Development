@@ -6,11 +6,12 @@
 
 {% block content %}
 <div class="users-page">
-{{ page_header("Users", "Register residents and manage accounts.") }}
+{{ page_header(t('admin.users.title'), t('admin.users.subtitle')) }}
 
 <section class="panel">
   <h2>Register new user</h2>
   <form method="post" class="form form-grid">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="form-group">
       <label for="id_number">ID number</label>
       <input type="text" id="id_number" name="id_number" required
@@ -84,7 +85,7 @@
             value="1"
             class="filter-chip-input"
             {% if negative_balance_only %}checked{% endif %}
-            onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()">
+            data-autosubmit>
           <span class="filter-chip-label">Negative balance</span>
         </label>
 
@@ -118,7 +119,8 @@
           <td class="table-actions">
             <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="btn btn-ghost btn-sm">Edit</a>
             <form method="post" action="{{ url_for('admin.delete_user', user_id=user.id) }}" class="inline-form"
-                  onsubmit="return confirm('Delete this user permanently? Subscriptions, chips, and transactions will be removed.');">
+                  data-confirm="Delete this user permanently? Their subscriptions and chips will be removed. Users with payment history cannot be deleted.">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="submit" class="btn btn-danger btn-sm">Delete</button>
             </form>
           </td>

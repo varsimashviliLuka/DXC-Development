@@ -2,12 +2,13 @@
 
 from flask import Blueprint, flash, g, redirect, render_template, request, url_for
 
+from app.i18n import t
 from app.services.auth_service import AuthService
 from app.services.chip_service import ChipService
 from app.services.subscription_service import SubscriptionService
 from app.services.transaction_service import TransactionService
 from app.services.user_service import UserService
-from app.web.decorators import active_user_required, login_required
+from app.web.decorators import active_user_required, login_required, start_user_session
 from app.web.utils import flash_exception, form_value
 
 user_bp = Blueprint("user", __name__)
@@ -27,7 +28,7 @@ def dashboard():
 def subscriptions():
   page = SubscriptionService.list_for_user_paginated(
     g.current_user.id,
-    page=int(request.args.get("page", 1)),
+    page=request.args.get("page", 1, type=int),
     per_page=USER_LIST_PER_PAGE,
   )
   return render_template(
@@ -42,7 +43,7 @@ def subscriptions():
 def chips():
   page = ChipService.list_for_user_paginated(
     g.current_user.id,
-    page=int(request.args.get("page", 1)),
+    page=request.args.get("page", 1, type=int),
     per_page=USER_LIST_PER_PAGE,
   )
   return render_template(
@@ -57,7 +58,7 @@ def chips():
 def transactions():
   page = TransactionService.list_for_user_paginated(
     g.current_user.id,
-    page=int(request.args.get("page", 1)),
+    page=request.args.get("page", 1, type=int),
     per_page=USER_LIST_PER_PAGE,
   )
   return render_template(
@@ -65,6 +66,13 @@ def transactions():
     transactions=page.items,
     pagination=page,
   )
+
+
+@user_bp.route("/pay")
+@active_user_required
+def pay():
+  subscriptions = SubscriptionService.list_for_user(g.current_user.id)
+  return render_template("user/pay.html", subscriptions=subscriptions)
 
 
 @user_bp.route("/profile")
@@ -83,7 +91,8 @@ def password():
         form_value(request.form, "current_password"),
         form_value(request.form, "new_password"),
       )
-      flash("Password updated successfully.", "success")
+      start_user_session(g.current_user)
+      flash(t("user.password.updated"), "success")
       return redirect(url_for("user.profile"))
     except Exception as exc:
       flash_exception(exc)

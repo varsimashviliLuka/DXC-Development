@@ -91,8 +91,9 @@ class UserService:
         raise ConflictError("ID number already registered")
       user.id_number = id_num
 
-    if status is not None:
+    if status is not None and status != user.status:
       user.status = status
+      user.revoke_sessions()
     if first_name is not None:
       user.first_name = first_name.strip() or None
     if last_name is not None:
@@ -106,6 +107,7 @@ class UserService:
       user.email = email_addr
     if password is not None:
       user.password_hash = hash_password(validate_password(password))
+      user.revoke_sessions()
     if admin_comment_set:
       user.admin_comment = (admin_comment or "").strip() or None
     if phones_set:
@@ -126,12 +128,18 @@ class UserService:
       raise ForbiddenError("Cannot delete your own account")
 
     subscription_ids = [sub.id for sub in Subscription.query.filter_by(user_id=user.id).all()]
-    if subscription_ids:
-      Transaction.query.filter(
-        Transaction.subscription_id.in_(subscription_ids)
-      ).delete(synchronize_session=False)
+    has_history = Transaction.query.filter(
+      db.or_(
+        Transaction.user_id == user.id,
+        Transaction.subscription_id.in_(subscription_ids),
+      )
+    ).first()
+    if has_history:
+      raise ConflictError(
+        "This user has payment history and cannot be deleted. "
+        "Set their status to inactive instead."
+      )
 
-    Transaction.query.filter_by(user_id=user.id).delete(synchronize_session=False)
     BankImport.query.filter_by(user_id=user.id).update(
       {BankImport.user_id: None},
       synchronize_session=False,

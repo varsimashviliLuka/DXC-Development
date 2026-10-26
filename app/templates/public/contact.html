@@ -1,0 +1,103 @@
+{% extends "public/base.html" %}
+
+{% block title %}{{ t('contact.title') }} — {{ company.name }}{% endblock %}
+
+{% macro field_error(name) %}
+  {% if errors.get(name) %}<p class="form-error" id="{{ name }}-error">{{ t(errors[name]) }}</p>{% endif %}
+{% endmacro %}
+
+{% macro invalid_attrs(name) %}{% if errors.get(name) %} aria-invalid="true" aria-describedby="{{ name }}-error"{% endif %}{% endmacro %}
+
+{% block content %}
+<section class="public-page-header">
+  <div class="public-container">
+    <h1>{{ t('contact.title') }}</h1>
+    <p class="public-lead">{{ t('contact.subtitle') }}</p>
+  </div>
+</section>
+
+<section class="public-section">
+  <div class="public-container public-contact-grid">
+    <div class="panel">
+      <h2>{{ t('contact.form_title') }}</h2>
+      <form method="post" action="{{ url_for('main.contact') }}" class="form" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="form-group">
+          <label for="name">{{ t('contact.field.name') }}</label>
+          <input type="text" id="name" name="name" required maxlength="100" autocomplete="name"
+                 value="{{ form.get('name', '') }}"{{ invalid_attrs('name') }}>
+          {{ field_error('name') }}
+        </div>
+
+        <div class="form-group">
+          <label for="phone">{{ t('contact.field.phone') }}</label>
+          <input type="tel" id="phone" name="phone" required maxlength="20" autocomplete="tel"
+                 placeholder="+995 5XX XX XX XX" value="{{ form.get('phone', '') }}"{{ invalid_attrs('phone') }}>
+          {{ field_error('phone') }}
+        </div>
+
+        <div class="form-group">
+          <label for="email">{{ t('contact.field.email') }}</label>
+          <input type="email" id="email" name="email" maxlength="255" autocomplete="email"
+                 value="{{ form.get('email', '') }}"{{ invalid_attrs('email') }}>
+          {{ field_error('email') }}
+        </div>
+
+        <div class="form-group">
+          <label for="service">{{ t('contact.field.service') }}</label>
+          <select id="service" name="service" required{{ invalid_attrs('service') }}>
+            <option value="" disabled{% if not form.get('service') %} selected{% endif %}>{{ t('contact.field.service') }}</option>
+            {% for key in services %}
+            <option value="{{ key }}"{% if form.get('service') == key %} selected{% endif %}>{{ t('service.' ~ key ~ '.title') }}</option>
+            {% endfor %}
+          </select>
+          {{ field_error('service') }}
+        </div>
+
+        <div class="form-group">
+          <label for="message">{{ t('contact.field.message') }}</label>
+          <textarea id="message" name="message" rows="5" required minlength="10" maxlength="2000"
+                    {{ invalid_attrs('message') }}>{{ form.get('message', '') }}</textarea>
+          <p class="muted form-hint">{{ t('contact.field.message_hint') }}</p>
+          {{ field_error('message') }}
+        </div>
+
+        <div class="public-hp" aria-hidden="true">
+          <label for="{{ honeypot_field }}">Website</label>
+          <input type="text" id="{{ honeypot_field }}" name="{{ honeypot_field }}" tabindex="-1" autocomplete="off">
+        </div>
+
+        <button type="submit" class="btn btn-primary">{{ t('contact.submit') }}</button>
+      </form>
+    </div>
+
+    <aside class="panel">
+      <h2>{{ t('contact.details_title') }}</h2>
+      <dl class="detail-list">
+        {% if company.phone %}
+        <dt>{{ t('contact.phone') }}</dt>
+        <dd><a href="tel:{{ company.phone }}">{{ company.phone }}</a></dd>
+        {% endif %}
+        {% if company.email %}
+        <dt>{{ t('contact.email') }}</dt>
+        <dd><a href="mailto:{{ company.email }}">{{ company.email }}</a></dd>
+        {% endif %}
+        {% if localized(company.address) %}
+        <dt>{{ t('contact.address') }}</dt>
+        <dd>
+          {{ localized(company.address) }}
+          {% if company.map_url | external_url %}
+          <br><a href="{{ company.map_url | external_url }}" rel="noopener" target="_blank">{{ t('contact.open_map') }}</a>
+          {% endif %}
+        </dd>
+        {% endif %}
+        {% if localized(company.hours) %}
+        <dt>{{ t('contact.hours') }}</dt>
+        <dd>{{ localized(company.hours) }}</dd>
+        {% endif %}
+      </dl>
+    </aside>
+  </div>
+</section>
+{% endblock %}

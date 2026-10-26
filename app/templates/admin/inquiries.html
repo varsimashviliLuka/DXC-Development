@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% from "macros/pagination.html" import render_pagination %}
+{% from "macros/ui.html" import page_header, badge %}
+
+{% block title %}{{ t('admin.inquiries.title') }} — {{ app_name }}{% endblock %}
+
+{% block content %}
+{{ page_header(t('admin.inquiries.title'), t('admin.inquiries.subtitle')) }}
+
+<section class="panel">
+  <form method="get" action="{{ url_for('admin.inquiries') }}" class="list-toolbar">
+    <div class="list-toolbar-search">
+      <input type="search" name="q" value="{{ search_q }}" placeholder="{{ t('admin.inquiries.search') }}" class="search-input">
+    </div>
+    <div class="list-toolbar-filters">
+      <select name="status" data-autosubmit aria-label="{{ t('col.status') }}">
+        <option value="">{{ t('admin.inquiries.all_statuses') }}</option>
+        {% for s in statuses %}
+        <option value="{{ s.value }}"{% if status_filter == s %} selected{% endif %}>{{ t('status.' ~ s.value) }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn btn-ghost btn-sm list-toolbar-apply">{{ t('common.apply') }}</button>
+    </div>
+  </form>
+
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>{{ t('col.received') }}</th>
+          <th>{{ t('col.name') }}</th>
+          <th>{{ t('col.phone') }}</th>
+          <th>{{ t('col.service') }}</th>
+          <th>{{ t('col.status') }}</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for inquiry in inquiries %}
+        <tr>
+          <td>{{ inquiry.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+          <td><strong>{{ inquiry.name }}</strong>{% if inquiry.email %}<br><span class="muted">{{ inquiry.email }}</span>{% endif %}</td>
+          <td><a href="tel:{{ inquiry.phone }}">{{ inquiry.phone }}</a></td>
+          <td>{{ t('service.' ~ inquiry.service ~ '.title') }}</td>
+          <td>{{ badge(inquiry.status) }}</td>
+          <td class="table-actions">
+            <a href="{{ url_for('admin.inquiry_detail', inquiry_id=inquiry.id) }}" class="btn btn-ghost btn-sm">{{ t('common.open') }}</a>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="muted">{{ t('admin.inquiries.empty') }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {{ render_pagination(pagination, 'admin.inquiries', params=filter_params) }}
+</section>
+{% endblock %}
